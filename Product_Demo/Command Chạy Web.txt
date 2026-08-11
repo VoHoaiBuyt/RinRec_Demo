@@ -1,0 +1,20 @@
+========================================================================
+🚀 HƯỚNG DẪN KHỞI CHẠY WEB DEMO GỢI Ý SẢN PHẨM TÀI CHÍNH (FINTECH ULTRAGCN)
+========================================================================
+
+CÁCH KHỞI CHẠY WEB DEMO (CHUẨN STREAMLIT):
+1. Mở Terminal / PowerShell trong VS Code hoặc cmd
+2. Điều hướng vào thư mục Product_Demo:
+   cd e:\RinRec_Demo\Product_Demo
+3. Chạy một trong các lệnh sau:
+   py -m streamlit run demo_web.py
+   (hoặc nếu đã có biến môi trường Scripts: streamlit run demo_web.py)
+4. Trình duyệt sẽ tự động mở giao diện tại: http://localhost:8501
+
+------------------------------------------------------------------------
+TÁI HUẤN LUYỆN MÔ HÌNH VÀ XUẤT LẠI KẾT QUẢ:
+- Cách 1: Chạy script so sánh 5 mô hình:
+   python fintech_models_comparison.py
+- Cách 2: Mở và chạy notebook:
+   Product_Demo/Recommend_Using_UltraGCN.ipynb
+  (File purchase_history.csv và recommendations.csv sẽ tự động cập nhật).

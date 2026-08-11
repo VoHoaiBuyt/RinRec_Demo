@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.env
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Node / JS
+node_modules/
+package.json
+package-lock.json
+
+# Local data cache
+data_fintech/
+*.csv.tmp
+
+# OS generated files
+.DS_Store
+Thumbs.db
