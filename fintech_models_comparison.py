@@ -62,25 +62,45 @@ if df_customers.empty or df_transactions.empty:
 
 print(f"✅ Đã nạp thành công từ MongoDB Atlas: {len(df_customers)} KH | {len(df_products)} SP | {len(df_services)} DV | {len(df_transactions)} GD | {len(df_holdings)} Sở hữu")
 
-# Mapping từ Nhóm Dịch vụ sang Sản phẩm mục tiêu
+# Lấy danh sách mã sản phẩm hợp lệ từ CSDL MongoDB (DanhMucSanPham)
+valid_sp_ids = set(df_products["Ma_SP"].dropna().unique()) if "Ma_SP" in df_products.columns else set()
+
+# Mapping từ Nhóm Dịch vụ sang Sản phẩm mục tiêu (dựa hoàn toàn trên DanhMucSanPham từ MongoDB)
 service_to_prod = {
-    "A. Tài khoản & Thông tin KH": "SP024",
-    "B. Giao dịch tiền mặt": "SP004",
-    "C. Tiết kiệm & Tiền gửi": "SP001",
-    "D. Thẻ": "SP004",
-    "E. Chuyển tiền & Thanh toán": "SP021",
-    "F. Ngoại tệ": "SP018",
-    "G. Tín dụng": "SP008",
-    "H. Bảo hiểm & Đầu tư": "SP013",
-    "I. Ngân hàng số & Hỗ trợ": "SP021",
-    "J. Khách hàng doanh nghiệp": "SP025"
+    "A. Tài khoản & Thông tin KH": "SP010",
+    "B. Giao dịch tiền mặt": "SP005",
+    "C. Tiết kiệm & Tiền gửi": "SP008",
+    "D. Thẻ": "SP001",
+    "E. Chuyển tiền & Thanh toán": "SP001",
+    "F. Ngoại tệ": "SP009",
+    "G. Tín dụng": "SP002",
+    "H. Bảo hiểm & Đầu tư": "SP006",
+    "I. Ngân hàng số & Hỗ trợ": "SP001",
+    "J. Khách hàng doanh nghiệp": "SP011"
+}
+
+# Mapping nhóm sản phẩm sang sản phẩm đại diện có trong DanhMucSanPham của MongoDB
+group_to_prod = {
+    "Thẻ": "SP001",
+    "Vay": "SP002",
+    "Bảo hiểm": "SP006",
+    "Đầu tư": "SP008",
+    "Tiết kiệm": "SP008",
+    "Phân khúc": "SP010",
+    "Tài khoản": "SP010",
+    "Ngoại tệ": "SP009",
+    "Dịch vụ số": "SP001",
+    "Doanh nghiệp": "SP011"
 }
 
 interactions = []
-# Từ Holdings (sở hữu thực tế)
+# Từ Holdings (sở hữu thực tế từ MongoDB)
 for _, row in df_holdings.iterrows():
     c_id = int(row["customer_id"])
     p_id = str(row["product_id"])
+    if p_id not in valid_sp_ids:
+        p_grp = str(row.get("product_group", "Thẻ"))
+        p_id = group_to_prod.get(p_grp, "SP001")
     bal = float(row.get("current_balance", 10_000_000))
     rating = 4.5 + min(0.5, np.log10(max(1, bal)) / 10.0)
     interactions.append({"customer_id": c_id, "product_id": p_id, "rating": rating})
@@ -451,7 +471,10 @@ selected_cids = random.sample(list(df_customers["customer_id"].values), min(50, 
 # 6.1. purchase_history.csv (Lịch sử giao dịch & dịch vụ quầy)
 hist_rows = []
 for cid in selected_cids:
-    cust = df_customers[df_customers["customer_id"] == cid].iloc[0]
+    cust_match = df_customers[df_customers["customer_id"] == cid]
+    if cust_match.empty:
+        continue
+    cust = cust_match.iloc[0]
     c_txns = df_transactions[df_transactions["customer_id"] == cid]
     for _, tx in c_txns.iterrows():
         hist_rows.append({
@@ -479,45 +502,58 @@ i_embs = emb[num_users:]
 
 rec_rows = []
 for cid in selected_cids:
-    cust = df_customers[df_customers["customer_id"] == cid].iloc[0]
+    cust_match = df_customers[df_customers["customer_id"] == cid]
+    if cust_match.empty:
+        continue
+    cust = cust_match.iloc[0]
     if cid in user_encoder.classes_:
         u_idx = user_encoder.transform([cid])[0]
         scores = u_embs[u_idx] @ i_embs.T
-        top5_idx = np.argsort(scores)[-5:][::-1]
+        top5_idx = np.argsort(scores)[-min(5, len(scores)):][::-1]
     else:
-        top5_idx = range(5)
+        top5_idx = range(min(5, num_items))
         
     casa = float(cust.get("casa_balance", 0))
     seg = str(cust.get("segment", "MASS"))
     
     for rank, i_idx in enumerate(top5_idx, 1):
         p_id = item_encoder.inverse_transform([i_idx])[0]
-        p_info = df_products[df_products["Ma_SP"] == p_id].iloc[0]
+        p_match = df_products[df_products["Ma_SP"] == p_id]
+        if p_match.empty and "product_id" in df_products.columns:
+            p_match = df_products[df_products["product_id"] == p_id]
+            
+        p_info = p_match.iloc[0]
         
         match_score = int(85 + (5 - rank) * 3 + random.randint(-2, 2))
         match_score = min(99, max(75, match_score))
         
-        if "Tiết kiệm" in str(p_info["Nhom"]):
-            gdv_script = f"Khách có {casa:,.0f}đ số dư nhàn rỗi. Gợi ý {p_info['Ten_san_pham']} để tối ưu lãi suất định kỳ."
-        elif "Thẻ" in str(p_info["Nhom"]):
-            gdv_script = f"Khách có dòng tiền ổn định. Gợi ý mở {p_info['Ten_san_pham']} hoàn tiền chi tiêu lên đến 45 ngày miễn lãi."
-        elif "Bảo hiểm" in str(p_info["Nhom"]):
-            gdv_script = f"Gợi ý {p_info['Ten_san_pham']} để bảo vệ toàn diện tài chính gia đình và tích lũy dài hạn."
-        elif "Vay" in str(p_info["Nhom"]):
-            gdv_script = f"Tư vấn gói {p_info['Ten_san_pham']} với lãi suất ưu đãi cố định năm đầu."
+        p_nhom = p_info.get("Nhom", p_info.get("product_group", "Tài chính"))
+        p_name = p_info.get("Ten_san_pham", p_info.get("product_name", f"Sản phẩm {p_id}"))
+        p_val = p_info.get("Gia_tri_cot_loi", p_info.get("value_proposition", "Giải pháp tài chính"))
+        p_fee = p_info.get("Lai_suat_Phi", p_info.get("rate_or_fee", "Theo biểu phí"))
+        p_price = float(p_info.get("So_tien_toi_thieu", p_info.get("min_amount", 0)) or 0)
+        
+        if "Tiết kiệm" in str(p_nhom):
+            gdv_script = f"Khách có {casa:,.0f}đ số dư nhàn rỗi. Gợi ý {p_name} để tối ưu lãi suất định kỳ."
+        elif "Thẻ" in str(p_nhom):
+            gdv_script = f"Khách có dòng tiền ổn định. Gợi ý mở {p_name} hoàn tiền chi tiêu lên đến 45 ngày miễn lãi."
+        elif "Bảo hiểm" in str(p_nhom):
+            gdv_script = f"Gợi ý {p_name} để bảo vệ toàn diện tài chính gia đình và tích lũy dài hạn."
+        elif "Vay" in str(p_nhom):
+            gdv_script = f"Tư vấn gói {p_name} với lãi suất ưu đãi cố định năm đầu."
         else:
-            gdv_script = f"Gói {p_info['Ten_san_pham']}: {p_info['Gia_tri_cot_loi']}"
+            gdv_script = f"Gói {p_name}: {p_val}"
             
         rec_rows.append({
             "reviewerID": f"CUST_{cid:04d}",
             "reviewerName": cust["full_name"],
             "segment": seg,
-            "category": p_info["Nhom"],
-            "title": p_info["Ten_san_pham"],
+            "category": p_nhom,
+            "title": p_name,
             "brand": "VPBank Financial",
-            "price": f"{float(p_info.get('So_tien_toi_thieu', 0)):,.0f} VND",
-            "rate_or_fee": p_info.get("Lai_suat_Phi", "Theo biểu phí"),
-            "value_proposition": p_info["Gia_tri_cot_loi"],
+            "price": f"{p_price:,.0f} VND",
+            "rate_or_fee": p_fee,
+            "value_proposition": p_val,
             "match_score": f"{match_score}%",
             "gdv_script": gdv_script
         })

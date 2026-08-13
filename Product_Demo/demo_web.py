@@ -794,7 +794,7 @@ with tab2:
         st.bar_chart(rec_cat_dist, color="#00B14F")
         
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("##### 📋 Danh Sách Khách Hàng Tiềm Năng Cao (Match Score $\ge$ 95%)")
+    st.markdown(r"##### 📋 Danh Sách Khách Hàng Tiềm Năng Cao (Match Score $\ge$ 95%)")
     
     high_potential = recommendations[recommendations['match_score'].astype(str).str.contains('95|96|97|98|99|100', regex=True)].drop_duplicates(subset=['reviewerID'])
     if not high_potential.empty:

@@ -68,25 +68,44 @@ def run_data_pipeline():
     df_history = pd.DataFrame(history_records)
     
     # 3. Mapping tương tác User - Product
-    # Mapping từ Nhóm Dịch vụ sang Sản phẩm mục tiêu
+    valid_sp_ids = set(df_products["Ma_SP"].dropna().unique()) if "Ma_SP" in df_products.columns else set()
+    
+    # Mapping từ Nhóm Dịch vụ sang Sản phẩm mục tiêu (trong DanhMucSanPham của MongoDB)
     service_group_to_product = {
-        "A. Tài khoản & Thông tin KH": "SP024",
-        "B. Giao dịch tiền mặt": "SP004",
-        "C. Tiết kiệm & Tiền gửi": "SP001",
-        "D. Thẻ": "SP004",
-        "E. Chuyển tiền & Thanh toán": "SP021",
-        "F. Ngoại tệ": "SP018",
-        "G. Tín dụng": "SP008",
-        "H. Bảo hiểm & Đầu tư": "SP013",
-        "I. Ngân hàng số & Hỗ trợ": "SP021",
-        "J. Khách hàng doanh nghiệp": "SP025"
+        "A. Tài khoản & Thông tin KH": "SP010",
+        "B. Giao dịch tiền mặt": "SP005",
+        "C. Tiết kiệm & Tiền gửi": "SP008",
+        "D. Thẻ": "SP001",
+        "E. Chuyển tiền & Thanh toán": "SP001",
+        "F. Ngoại tệ": "SP009",
+        "G. Tín dụng": "SP002",
+        "H. Bảo hiểm & Đầu tư": "SP006",
+        "I. Ngân hàng số & Hỗ trợ": "SP001",
+        "J. Khách hàng doanh nghiệp": "SP011"
+    }
+
+    # Mapping nhóm sản phẩm sang mã sản phẩm hợp lệ trong MongoDB
+    group_to_product = {
+        "Thẻ": "SP001",
+        "Vay": "SP002",
+        "Bảo hiểm": "SP006",
+        "Đầu tư": "SP008",
+        "Tiết kiệm": "SP008",
+        "Phân khúc": "SP010",
+        "Tài khoản": "SP010",
+        "Ngoại tệ": "SP009",
+        "Dịch vụ số": "SP001",
+        "Doanh nghiệp": "SP011"
     }
     
     interactions = []
     # Từ Holdings (sở hữu thực tế)
     for _, row in df_holdings.iterrows():
         c_id = row["customer_id"]
-        p_id = row["product_id"]
+        p_id = str(row["product_id"])
+        if p_id not in valid_sp_ids:
+            p_grp = str(row.get("product_group", "Thẻ"))
+            p_id = group_to_product.get(p_grp, "SP001")
         bal = float(row.get("current_balance", 10_000_000))
         rating = 4.5 + min(0.5, np.log10(max(1, bal)) / 10.0)
         interactions.append({
