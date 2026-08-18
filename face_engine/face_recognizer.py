@@ -20,6 +20,7 @@ logger = logging.getLogger("FaceRecognizerEngine")
 
 # Kiểm tra các thư viện tùy chọn
 try:
+    # pyrefly: ignore [missing-import]
     import face_recognition
     HAS_DLIB = True
 except ImportError:
