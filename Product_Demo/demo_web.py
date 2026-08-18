@@ -674,13 +674,28 @@ with tab1:
         # TAB A: XÁC THỰC QUA DI ĐỘNG (CROSS-DEVICE QR)
         with ekyc_tab1:
             if session_manager:
-                from face_engine.session_manager import get_local_ip
+                from face_engine.session_manager import get_local_ip, get_all_local_ips
                 detected_ip = get_local_ip()
+                all_detected_ips = get_all_local_ips()
                 
                 # Cấu hình IP tùy chọn
                 with st.expander("⚙️ **Cài Đặt Mạng & Địa Chỉ IP Máy Chủ**", expanded=False):
-                    custom_ip = st.text_input("Địa chỉ IP máy tính (Wi-Fi LAN IP):", value=detected_ip, key="custom_ip_input", help="Đảm bảo điện thoại và máy tính kết nối cùng 1 mạng Wi-Fi.")
-                    if st.button("Áp Dụng IP Mới & Tạo Lại Mã QR", key="btn_apply_ip"):
+                    st.caption("Chọn nhanh IP phù hợp với kiểu kết nối giữa Điện thoại và Máy tính:")
+                    col_ip_btns = st.columns(len(all_detected_ips)) if all_detected_ips else [st.container()]
+                    for i, ip_opt in enumerate(all_detected_ips):
+                        ip_label = f"📶 Hotspot ({ip_opt})" if "192.168.137" in ip_opt else f"🌐 Wi-Fi/LAN ({ip_opt})"
+                        with col_ip_btns[i]:
+                            if st.button(ip_label, key=f"btn_quick_ip_{i}"):
+                                st.session_state["custom_ip_input"] = ip_opt
+                                new_sess = session_manager.create_session(host_override=ip_opt)
+                                st.session_state.current_ekyc_sid = new_sess["session_id"]
+                                st.session_state.ekyc_verified = False
+                                st.session_state.ekyc_info = None
+                                st.rerun()
+
+                    custom_ip = st.text_input("Địa chỉ IP máy tính (hoặc Domain/Tunnel):", value=st.session_state.get("custom_ip_input", detected_ip), key="custom_ip_input_field", help="Ví dụ: 192.168.137.1 (khi laptop phát Hotspot) hoặc IP mạng Wi-Fi.")
+                    if st.button("Áp Dụng IP & Tạo Lại Mã QR", key="btn_apply_ip"):
+                        st.session_state["custom_ip_input"] = custom_ip
                         new_sess = session_manager.create_session(host_override=custom_ip)
                         st.session_state.current_ekyc_sid = new_sess["session_id"]
                         st.session_state.ekyc_verified = False

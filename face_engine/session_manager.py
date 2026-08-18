@@ -30,8 +30,38 @@ from .face_recognizer import get_face_engine
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("SessionManager")
 
+def get_all_local_ips() -> list:
+    """Trả về danh sách tất cả các địa chỉ IP khả dụng của máy chủ (Wi-Fi, LAN, Hotspot)"""
+    ips = []
+    try:
+        _, _, host_ips = socket.gethostbyname_ex(socket.gethostname())
+        for ip in host_ips:
+            if not ip.startswith("127.") and ip not in ips:
+                ips.append(ip)
+    except Exception:
+        pass
+
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        gw_ip = s.getsockname()[0]
+        s.close()
+        if gw_ip not in ips and not gw_ip.startswith("127."):
+            ips.append(gw_ip)
+    except Exception:
+        pass
+
+    return ips if ips else ["127.0.0.1"]
+
 def get_local_ip() -> str:
-    """Tự động phát hiện địa chỉ IP mạng nội bộ (LAN) của máy chủ"""
+    """Tự động phát hiện địa chỉ IP mạng nội bộ (LAN / Hotspot) của máy chủ"""
+    all_ips = get_all_local_ips()
+    # Ưu tiên IP Hotspot Windows (192.168.137.1) nếu đang bật Hotspot
+    for ip in all_ips:
+        if ip == "192.168.137.1" or ip.startswith("192.168.137."):
+            return ip
+    
+    # Tiếp theo thử outbound IP
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.connect(("8.8.8.8", 80))
@@ -39,10 +69,9 @@ def get_local_ip() -> str:
         s.close()
         return ip
     except Exception:
-        try:
-            return socket.gethostbyname(socket.gethostname())
-        except Exception:
-            return "127.0.0.1"
+        pass
+
+    return all_ips[0] if all_ips else "127.0.0.1"
 
 class CrossDeviceHTTPHandler(BaseHTTPRequestHandler):
     """HTTP Request Handler phục vụ giao diện Web Mobile và API nhận diện"""
