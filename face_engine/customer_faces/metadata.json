@@ -22,5 +22,9 @@
   "CUST_0015": {
     "name": "Trần Thị Mai",
     "segment": "PRIME"
+  },
+  "CUST_0001": {
+    "name": "Phan Đức Phong",
+    "segment": "MASS"
   }
 }
