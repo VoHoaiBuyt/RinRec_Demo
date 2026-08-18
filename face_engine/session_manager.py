@@ -170,7 +170,7 @@ class CrossDeviceSessionManager:
                 img = qr.make_image(fill_color="#0A2540", back_color="#FFFFFF")
                 
                 buffered = io.BytesIO()
-                img.save(buffered, format="PNG")
+                img.save(buffered)
                 return base64.b64encode(buffered.getvalue()).decode("utf-8")
             except Exception as e:
                 logger.warning(f"Lỗi tạo QR qua thư viện qrcode: {e}")
