@@ -2,7 +2,13 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import os
+import sys
 import textwrap
+
+# Đảm bảo root directory luôn có trong sys.path
+_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if _root_dir not in sys.path:
+    sys.path.insert(0, _root_dir)
 
 # ==============================================================================
 # CẤU HÌNH TRANG WEB & THEME GIAO DIỆN CHUẨN DOANH NGHIỆP (ENTERPRISE BANKING)
@@ -357,6 +363,7 @@ except Exception:
     get_collection_df = None
 
 # Tích hợp Module Nhận Diện Khuôn Mặt & Cross-Device Session
+face_engine_error = None
 try:
     from face_engine import get_face_engine, get_session_manager
     face_engine = get_face_engine()
@@ -364,6 +371,7 @@ try:
 except Exception as e:
     face_engine = None
     session_manager = None
+    face_engine_error = str(e)
 
 def standardize_df(df, col_type="purchase_history"):
     if df is None or df.empty:
@@ -718,7 +726,7 @@ with tab1:
                             st.session_state.ekyc_info = None
                             st.rerun()
             else:
-                st.warning("Module Session Manager đang được khởi tạo...")
+                st.error(f"❌ Không thể tải Module Session Manager ({face_engine_error if face_engine_error else 'Vui lòng nhấn Rerun hoặc khởi động lại Streamlit'}).")
 
         # TAB B: QUÉT TẠI QUẦY (WEBCAM)
         with ekyc_tab2:
