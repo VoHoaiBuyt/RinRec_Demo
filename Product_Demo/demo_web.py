@@ -9,7 +9,6 @@ import textwrap
 # ==============================================================================
 st.set_page_config(
     page_title="VPBank SmartAdvisor 360 - Trợ Lý Tư Vấn & Bán Chéo Thông Minh",
-    page_icon="🏦",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -26,13 +25,16 @@ html, body, [class*="css"] {
     background: linear-gradient(135deg, #0A2540 0%, #0D3866 50%, #00B14F 100%);
     padding: 1.2rem 1.8rem;
     border-radius: 14px;
-    color: white;
+    color: white !important;
     margin-bottom: 1.5rem;
     box-shadow: 0 10px 25px -5px rgba(10, 37, 64, 0.25);
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
+}
+.top-brand-bar * {
+    color: white !important;
 }
 .top-brand-title {
     font-size: 1.6rem;
@@ -44,14 +46,14 @@ html, body, [class*="css"] {
 }
 .top-brand-sub {
     font-size: 0.95rem;
-    color: #E2E8F0;
+    color: #E2E8F0 !important;
     margin-top: 4px;
     font-weight: 500;
 }
 .top-badge-live {
     background: rgba(0, 177, 79, 0.2);
     border: 1px solid #00B14F;
-    color: #34D399;
+    color: #34D399 !important;
     padding: 0.35rem 0.8rem;
     border-radius: 20px;
     font-size: 0.85rem;
@@ -229,6 +231,49 @@ html, body, [class*="css"] {
     border: 1px solid #CBD5E1;
     color: #334155;
 }
+
+/* AI Smart Counter & Cross-Device eKYC CSS */
+.ekyc-card-box {
+    background: linear-gradient(135deg, #0A2540 0%, #0F3862 100%);
+    border: 1px solid #00B14F;
+    border-radius: 16px;
+    padding: 1.4rem 1.6rem;
+    color: white !important;
+    margin-bottom: 1.2rem;
+    box-shadow: 0 10px 25px -5px rgba(0, 177, 79, 0.2);
+}
+.ekyc-card-box * {
+    color: white !important;
+}
+.ekyc-qr-container {
+    background: #FFFFFF;
+    padding: 1rem;
+    border-radius: 14px;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.cust-face-portrait {
+    width: 100px;
+    height: 120px;
+    border-radius: 12px;
+    object-fit: cover;
+    border: 2.5px solid #00B14F;
+    box-shadow: 0 4px 12px rgba(0, 177, 79, 0.25);
+}
+.ekyc-verified-badge {
+    background: rgba(0, 177, 79, 0.2);
+    border: 1px solid #00B14F;
+    color: #34D399 !important;
+    padding: 0.25rem 0.65rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
 </style>""", unsafe_allow_html=True)
 
 # Helper render HTML an toàn không bị dính thụt dòng Markdown
@@ -236,41 +281,41 @@ def render_html(html_str):
     st.markdown(textwrap.dedent(html_str).strip(), unsafe_allow_html=True)
 
 def generate_personalized_signals(user_records, user_recs):
-    """Trích xuất tín hiệu nhu cầu cá nhân hóa thực tế cho từng khách hàng"""
+    """Trích xuất tín hiệu nhu cầu cá nhân hóa thực tế cho từng khách hàng (Tiếng Việt chuẩn, không emoji rườm rà)"""
     signals = []
     
     # 1. Phân khúc khách hàng
     seg = user_records['segment'].iloc[0] if 'segment' in user_records.columns else 'MASS'
     if seg == 'DIAMOND':
-        signals.append(('signal-pill-vip', '👑 VIP Diamond: Đặc quyền hạn mức cao & Chăm sóc bởi RM'))
+        signals.append(('signal-pill-vip', 'PHÂN KHÚC: DIAMOND VIP (Hạn mức cao & Chăm sóc bởi RM)'))
     elif seg == 'PRIME':
-        signals.append(('signal-pill-vip', '⭐ Prime Priority: Tiềm năng mở rộng gói giải pháp tài chính'))
+        signals.append(('signal-pill-vip', 'PHÂN KHÚC: PRIME PRIORITY (Tiềm năng mở rộng gói giải pháp tài chính)'))
     else:
-        signals.append(('signal-pill-vip', '👥 Mass Standard: Mục tiêu kích hoạt sản phẩm thẻ & số hóa'))
+        signals.append(('signal-pill-vip', 'PHÂN KHÚC: MASS (Mục tiêu kích hoạt sản phẩm thẻ & số hóa)'))
         
-    # 2. Nhóm dịch vụ chiếm tỷ trọng cao nhất của riêng khách này
+    # 2. Nhóm dịch vụ chiếm tỷ trọng cao nhất
     cat_counts = user_records['category'].value_counts()
     if not cat_counts.empty:
         top_cat = str(cat_counts.index[0])
         top_cat_pct = int(round((cat_counts.iloc[0] / len(user_records)) * 100))
+        clean_cat = top_cat.split('.')[-1].strip() if '.' in top_cat else top_cat
         
         if any(k in top_cat.lower() for k in ['doanh nghiệp', 'l/c', 'tài trợ']):
-            signals.append(('signal-pill-need', f'🏢 Trọng tâm Doanh nghiệp ({top_cat_pct}% GD) - Nhu cầu tài trợ thương mại'))
+            signals.append(('signal-pill-need', f'TRỌNG TÂM: Doanh nghiệp ({top_cat_pct}% GD) - Nhu cầu tài trợ thương mại'))
         elif any(k in top_cat.lower() for k in ['ngoại tệ', 'quốc tế', 'kiều hối']):
-            signals.append(('signal-pill-need', f'🌐 Trọng tâm Ngoại tệ ({top_cat_pct}% GD) - Nhu cầu chi tiêu quốc tế'))
+            signals.append(('signal-pill-need', f'TRỌNG TÂM: Ngoại tệ ({top_cat_pct}% GD) - Nhu cầu chi tiêu quốc tế'))
         elif any(k in top_cat.lower() for k in ['tiết kiệm', 'tiền gửi']):
-            signals.append(('signal-pill-need', f'💰 Trọng tâm Tiết kiệm ({top_cat_pct}% GD) - Tích lũy dòng tiền định kỳ'))
+            signals.append(('signal-pill-need', f'TRỌNG TÂM: Tiết kiệm ({top_cat_pct}% GD) - Tích lũy dòng tiền định kỳ'))
         elif any(k in top_cat.lower() for k in ['thẻ', 'pos']):
-            signals.append(('signal-pill-need', f'💳 Tần suất dùng Thẻ cao ({top_cat_pct}% GD) - Nhu cầu hoàn tiền chi tiêu'))
+            signals.append(('signal-pill-need', f'TRỌNG TÂM: Thẻ ({top_cat_pct}% GD) - Nhu cầu hoàn tiền chi tiêu'))
         elif any(k in top_cat.lower() for k in ['chuyển tiền', 'thanh toán']):
-            signals.append(('signal-pill-need', f'⚡ Thanh toán liên tục ({top_cat_pct}% GD) - Dòng tiền luân chuyển cao'))
+            signals.append(('signal-pill-need', f'TRỌNG TÂM: Thanh toán ({top_cat_pct}% GD) - Dòng tiền luân chuyển cao'))
         elif any(k in top_cat.lower() for k in ['bảo hiểm', 'đầu tư']):
-            signals.append(('signal-pill-need', f'🛡️ Khẩu vị Bảo hiểm/Đầu tư ({top_cat_pct}% GD) - Bảo toàn tài sản'))
+            signals.append(('signal-pill-need', f'TRỌNG TÂM: Bảo hiểm & Đầu tư ({top_cat_pct}% GD) - Bảo toàn tài sản'))
         elif any(k in top_cat.lower() for k in ['tín dụng', 'vay']):
-            signals.append(('signal-pill-need', f'🏦 Nhu cầu Tín dụng ({top_cat_pct}% GD) - Bổ sung vốn lưu động'))
+            signals.append(('signal-pill-need', f'TRỌNG TÂM: Tín dụng ({top_cat_pct}% GD) - Bổ sung vốn lưu động'))
         else:
-            clean_cat = top_cat.split('.')[-1].strip() if '.' in top_cat else top_cat
-            signals.append(('signal-pill-need', f'📊 Nhu cầu chính: {clean_cat} ({top_cat_pct}% GD)'))
+            signals.append(('signal-pill-need', f'TRỌNG TÂM: {clean_cat} ({top_cat_pct}% GD)'))
 
     # 3. Kênh giao dịch chủ đạo
     if 'channel' in user_records.columns:
@@ -279,25 +324,25 @@ def generate_personalized_signals(user_records, user_recs):
             primary_chan = chans.index[0]
             chan_pct = int(round((chans.iloc[0] / len(user_records)) * 100))
             if primary_chan == 'APP' and chan_pct >= 60:
-                signals.append(('signal-pill-chan', f'📱 Thuần số hóa VPBank NEO ({chan_pct}% qua App)'))
+                signals.append(('signal-pill-chan', f'KÊNH: VPBank NEO ({chan_pct}% qua App)'))
             elif primary_chan == 'QUẦY' and chan_pct >= 50:
-                signals.append(('signal-pill-chan', f'🏛️ Thân thiết tại Quầy ({chan_pct}% qua PGD)'))
+                signals.append(('signal-pill-chan', f'KÊNH: Tại Quầy ({chan_pct}% qua PGD)'))
             else:
-                signals.append(('signal-pill-chan', f'🔄 Giao dịch đa kênh ({primary_chan}: {chan_pct}%)'))
+                signals.append(('signal-pill-chan', f'KÊNH: Đa kênh ({primary_chan}: {chan_pct}%)'))
 
-    # 4. Cơ hội bán chéo số 1 cho riêng khách này
+    # 4. Cơ hội bán chéo số 1
     if not user_recs.empty:
         top_rec = user_recs.iloc[0]
         rec_title = top_rec.get('title', 'Sản phẩm tài chính')
         rec_score = top_rec.get('match_score', '90%')
-        signals.append(('signal-pill-opp', f'🎯 Cơ hội số 1: {rec_title} (Độ khớp {rec_score})'))
+        signals.append(('signal-pill-opp', f'GỢI Ý SỐ 1: {rec_title} (Độ khớp {rec_score})'))
 
     # 5. Sự kiện giao dịch gần nhất
     if 'transaction_time' in user_records.columns and not user_records.empty:
         last_tx = user_records.sort_values(by='transaction_time', ascending=False).iloc[0]
         tx_title = last_tx.get('title', 'Giao dịch')
         tx_amt = last_tx.get('price', '')
-        signals.append(('signal-pill-recent', f'🕒 GD mới nhất: {tx_title} ({tx_amt})'))
+        signals.append(('signal-pill-recent', f'GD GẦN NHẤT: {tx_title} ({tx_amt})'))
         
     return signals
 
@@ -310,6 +355,15 @@ try:
     from mongo_connector import get_collection_df
 except Exception:
     get_collection_df = None
+
+# Tích hợp Module Nhận Diện Khuôn Mặt & Cross-Device Session
+try:
+    from face_engine import get_face_engine, get_session_manager
+    face_engine = get_face_engine()
+    session_manager = get_session_manager()
+except Exception as e:
+    face_engine = None
+    session_manager = None
 
 def standardize_df(df, col_type="purchase_history"):
     if df is None or df.empty:
@@ -464,22 +518,22 @@ purchase_history, recommendations, product_catalog, is_mongo = load_app_data()
 # ==============================================================================
 # THANH HEADER TRUNG TÂM VẬN HÀNH (TOP BRAND BAR)
 # ==============================================================================
-mongo_status_badge = "● MONGODB ATLAS: ĐÃ KẾT NỐI (RinRec_DB)" if is_mongo else "● VẬN HÀNH THỜI GIAN THỰC (LOCAL CACHE)"
+mongo_status_badge = "MONGODB ATLAS: ĐÃ KẾT NỐI (RinRec_DB)" if is_mongo else "VẬN HÀNH: BỘ NHỚ ĐỆM CỤC BỘ"
 
 render_html(f"""
 <div class="top-brand-bar">
     <div>
         <div class="top-brand-title">
-            <span>🏛️ VPBank SmartAdvisor 360°</span>
+            <span>VPBank SmartAdvisor 360°</span>
         </div>
         <div class="top-brand-sub">
-            Hệ thống Trợ lý Bán hàng Thông minh & Đề xuất Sản phẩm Tài chính Cá nhân hóa tại Quầy
+            Hệ thống Trợ lý Tư vấn Bán chéo & Đề xuất Sản phẩm Tài chính Cá nhân hóa tại Quầy
         </div>
     </div>
     <div style="text-align: right;">
         <div class="top-badge-live">{mongo_status_badge}</div>
         <div style="font-size: 0.8rem; color: #CBD5E1; margin-top: 5px;">
-            Chi nhánh Hội Sở • GDV: <b>Nguyễn Thu Hà (VP8832)</b>
+            Chi nhánh Hội Sở | Giao dịch viên: <b>Nguyễn Thu Hà (VP8832)</b>
         </div>
     </div>
 </div>
@@ -488,12 +542,31 @@ render_html(f"""
 # ==============================================================================
 # SIDEBAR: BỘ LỌC KHÁCH HÀNG & TRUY VẤN HỒ SƠ
 # ==============================================================================
+# ==============================================================================
+# KHỞI TẠO SESSION STATE CHO EKYC & CHỌN KHÁCH HÀNG
+# ==============================================================================
+if "selected_cif" not in st.session_state:
+    st.session_state.selected_cif = None
+if "ekyc_verified" not in st.session_state:
+    st.session_state.ekyc_verified = False
+if "ekyc_info" not in st.session_state:
+    st.session_state.ekyc_info = None
+if "current_ekyc_sid" not in st.session_state:
+    if session_manager:
+        new_sess = session_manager.create_session()
+        st.session_state.current_ekyc_sid = new_sess["session_id"]
+    else:
+        st.session_state.current_ekyc_sid = None
+
+# ==============================================================================
+# SIDEBAR: BỘ LỌC KHÁCH HÀNG & TRUY VẤN HỒ SƠ
+# ==============================================================================
 with st.sidebar:
-    st.markdown("### 🔍 Tra Cứu Khách Hàng")
+    st.markdown("### Tra Cứu Khách Hàng")
     
     # Lọc theo Phân khúc
     segment_options = ["Tất cả phân khúc", "DIAMOND (Ưu tiên cao cấp)", "PRIME (Khách hàng ưu tiên)", "MASS (Đại chúng)"]
-    selected_seg_filter = st.selectbox("🎯 Lọc theo phân khúc:", segment_options, index=0)
+    selected_seg_filter = st.selectbox("Lọc theo phân khúc:", segment_options, index=0)
     
     filtered_df = purchase_history.copy()
     if selected_seg_filter.startswith("DIAMOND"):
@@ -510,12 +583,33 @@ with st.sidebar:
     )
     
     customer_list = ['-- Chọn hoặc tìm kiếm khách hàng --'] + sorted(user_unique['display'].tolist())
-    selected_customer_str = st.selectbox("👤 Danh sách Khách hàng tại quầy:", customer_list, index=0)
+    
+    # Đồng bộ với session_state khi được nhận diện qua eKYC
+    default_idx = 0
+    if st.session_state.selected_cif:
+        for idx, item in enumerate(customer_list):
+            if f"({st.session_state.selected_cif})" in item:
+                default_idx = idx
+                break
+
+    selected_customer_str = st.selectbox("Danh sách Khách hàng tại quầy:", customer_list, index=default_idx, key="sb_cust_select")
+    
+    if selected_customer_str and selected_customer_str != '-- Chọn hoặc tìm kiếm khách hàng --':
+        try:
+            curr_cif = selected_customer_str.split('(')[-1].replace(')', '').strip()
+            if st.session_state.selected_cif != curr_cif:
+                st.session_state.selected_cif = curr_cif
+                st.session_state.ekyc_verified = False
+                st.session_state.ekyc_info = None
+        except Exception:
+            pass
+    elif selected_customer_str == '-- Chọn hoặc tìm kiếm khách hàng --' and st.session_state.selected_cif is not None and not st.session_state.ekyc_verified:
+        st.session_state.selected_cif = None
     
     st.markdown("---")
     
     # Thống kê nhanh danh mục
-    st.markdown("### 📊 Tổng Quan Chi Nhánh")
+    st.markdown("### Tổng Quan Chi Nhánh")
     total_cust = purchase_history['reviewerName'].nunique()
     diamond_count = purchase_history[purchase_history['segment'] == 'DIAMOND']['reviewerName'].nunique()
     prime_count = purchase_history[purchase_history['segment'] == 'PRIME']['reviewerName'].nunique()
@@ -523,42 +617,163 @@ with st.sidebar:
     
     st.markdown(f"""
     - **Tổng số KH đang quản lý:** `{total_cust}` khách hàng
-    - 👑 **Diamond VIP:** `{diamond_count}` khách hàng
-    - ⭐ **Prime Priority:** `{prime_count}` khách hàng
-    - 👥 **Mass Standard:** `{mass_count}` khách hàng
+    - **Diamond VIP:** `{diamond_count}` khách hàng
+    - **Prime Priority:** `{prime_count}` khách hàng
+    - **Mass Standard:** `{mass_count}` khách hàng
     """)
     
     st.markdown("---")
-    st.caption("🔒 Phiên bản sản phẩm SmartBanking Hub v3.4.0\nBảo mật chuẩn ISO/IEC 27001")
+    st.caption("Phiên bản sản phẩm SmartBanking Hub v3.5.0\nBảo mật chuẩn ISO/IEC 27001")
 
 # ==============================================================================
 # LOGIC TRÍCH XUẤT THÔNG TIN KHÁCH HÀNG ĐƯỢC CHỌN
 # ==============================================================================
+selected_cif = st.session_state.get("selected_cif")
 selected_name = None
-selected_cif = None
 
-if selected_customer_str and selected_customer_str != '-- Chọn hoặc tìm kiếm khách hàng --':
-    try:
-        selected_cif = selected_customer_str.split('(')[-1].replace(')', '').strip()
-        user_records = purchase_history[purchase_history['reviewerID'] == selected_cif]
-        if not user_records.empty:
-            selected_name = user_records['reviewerName'].iloc[0]
-    except Exception:
-        selected_name = None
+if selected_cif:
+    user_records = purchase_history[purchase_history['reviewerID'] == selected_cif]
+    if not user_records.empty:
+        selected_name = user_records['reviewerName'].iloc[0]
 
 # ==============================================================================
 # ĐIỀU HƯỚNG TABS SẢN PHẨM
 # ==============================================================================
 tab1, tab2, tab3 = st.tabs([
-    "🎯 Hồ Sơ Khách Hàng 360° & Đề Xuất Bán Chéo",
-    "📈 Báo Cáo Cơ Hội Bán Chéo Chi Nhánh",
-    "📦 Danh Mục Sản Phẩm & Biểu Phí Ưu Đãi"
+    "Hồ Sơ Khách Hàng 360° & Đề Xuất Bán Chéo",
+    "Báo Cáo Cơ Hội Bán Chéo Chi Nhánh",
+    "Danh Mục Sản Phẩm & Biểu Phí Ưu Đãi"
 ])
 
 # ==============================================================================
 # TAB 1: HỒ SƠ KHÁCH HÀNG 360° & GỢI Ý NEXT-BEST-ACTION
 # ==============================================================================
 with tab1:
+    # --------------------------------------------------------------------------
+    # KHU VỰC QUẦY GIAO DỊCH SỐ: EKYC LIÊN THIẾT BỊ (CROSS-DEVICE QR & CAMERA)
+    # --------------------------------------------------------------------------
+    with st.expander("🛡️ **QUẦY GIAO DỊCH SỐ: NHẬN DIỆN KHUÔN MẶT KHÁCH HÀNG (AI Smart Counter & Mobile eKYC)**", expanded=(selected_cif is None)):
+        ekyc_tab1, ekyc_tab2, ekyc_tab3 = st.tabs([
+            "📱 Xác Thực Qua Di Động (Cross-Device QR)",
+            "📷 Quét Khuôn Mặt Tại Quầy (Webcam)",
+            "📁 Tải Ảnh Đối Soát / Đăng Ký Mới"
+        ])
+        
+        # TAB A: XÁC THỰC QUA DI ĐỘNG (CROSS-DEVICE QR)
+        with ekyc_tab1:
+            if session_manager:
+                sid = st.session_state.get("current_ekyc_sid")
+                sess = session_manager.get_session(sid) if sid else None
+                if not sess or sess.get("status") == "EXPIRED":
+                    sess = session_manager.create_session()
+                    st.session_state.current_ekyc_sid = sess["session_id"]
+                    sid = sess["session_id"]
+
+                # Kiểm tra xem session đã nhận diện thành công chưa
+                if sess.get("status") == "VERIFIED" and sess.get("result"):
+                    res = sess["result"]
+                    st.success(f"🎉 **XÁC THỰC THÀNH CÔNG TỪ THIẾT BỊ DI ĐỘNG!**\n\nKhách hàng: **{res.get('customer_name')}** (Mã CIF: `{res.get('cif_number')}`) | Phân khúc: **{res.get('segment')}** | Độ khớp: **{res.get('confidence')}%** (Engine: {res.get('engine')})")
+                    if st.session_state.selected_cif != res.get("cif_number"):
+                        st.session_state.selected_cif = res.get("cif_number")
+                        st.session_state.ekyc_verified = True
+                        st.session_state.ekyc_info = res
+                        st.rerun()
+
+                col_qr, col_info = st.columns([1, 1.6], gap="medium")
+                with col_qr:
+                    st.markdown("##### 1. Quét mã QR bằng Smartphone")
+                    st.image(f"data:image/png;base64,{sess['qr_base64']}", width=230)
+                    st.caption(f"Mã phiên: `{sid}` | Tự động hết hạn sau 3 phút")
+                
+                with col_info:
+                    st.markdown("##### 2. Hướng Dẫn Khách Hàng Thao Tác")
+                    st.markdown(f"""
+                    1. Khách hàng dùng **Camera / Zalo / Trình duyệt điện thoại** quét mã QR bên cạnh.
+                    2. Trang web camera di động sẽ tự động mở trên điện thoại:
+                       - URL: [`{sess['mobile_url']}`]({sess['mobile_url']})
+                    3. Khách hàng căn mặt vào khung oval và bấm **"Chụp & Gửi Xác Thực"**.
+                    4. Model AI trích xuất vector 128D, so khớp với CSDL ngân hàng và đồng bộ kết quả về quầy tức thì.
+                    """)
+                    
+                    btn_c1, btn_c2 = st.columns(2)
+                    with btn_c1:
+                        if st.button("🔄 Kiểm Tra Kết Quả Realtime", key="btn_check_sess"):
+                            chk_sess = session_manager.get_session(sid)
+                            if chk_sess and chk_sess.get("status") == "VERIFIED":
+                                res = chk_sess["result"]
+                                st.session_state.selected_cif = res.get("cif_number")
+                                st.session_state.ekyc_verified = True
+                                st.session_state.ekyc_info = res
+                                st.toast(f"Đã nhận diện khách hàng {res.get('customer_name')}!")
+                                st.rerun()
+                            elif chk_sess and chk_sess.get("status") == "PENDING":
+                                st.info("🟡 Đang chờ khách hàng quét mã và gửi ảnh từ điện thoại...")
+                            elif chk_sess and chk_sess.get("status") == "FAILED":
+                                st.error("❌ Không nhận diện được khuôn mặt trong ảnh gửi về.")
+                    with btn_c2:
+                        if st.button("➕ Tạo Mã QR Phiên Mới", key="btn_new_sess"):
+                            new_sess = session_manager.create_session()
+                            st.session_state.current_ekyc_sid = new_sess["session_id"]
+                            st.session_state.ekyc_verified = False
+                            st.session_state.ekyc_info = None
+                            st.rerun()
+            else:
+                st.warning("Module Session Manager đang được khởi tạo...")
+
+        # TAB B: QUÉT TẠI QUẦY (WEBCAM)
+        with ekyc_tab2:
+            st.markdown("##### Quét Khuôn Mặt Trực Tiếp Bằng Camera Tại Quầy")
+            st.caption("Dành cho trường hợp khách hàng quét trực tiếp tại thiết bị của Giao Dịch Viên:")
+            cam_file = st.camera_input("Bật Camera Quầy", key="cam_direct")
+            if cam_file is not None and face_engine:
+                with st.spinner("Đang nhận diện sinh trắc học AI..."):
+                    rec_res = face_engine.recognize_face(cam_file.getvalue())
+                    if rec_res.get("is_identified"):
+                        st.success(f"✅ **Nhận diện thành công:** {rec_res['customer_name']} (Mã CIF: `{rec_res['cif_number']}`) | Độ khớp: **{rec_res['confidence']}%** ({rec_res['engine']})")
+                        if st.button("Kích Hoạt Hồ Sơ 360° Khách Hàng Này", key="btn_activate_cam_cif"):
+                            st.session_state.selected_cif = rec_res["cif_number"]
+                            st.session_state.ekyc_verified = True
+                            st.session_state.ekyc_info = rec_res
+                            st.rerun()
+                    else:
+                        st.warning(f"⚠️ {rec_res.get('message', 'Không tìm thấy khuôn mặt khớp trong CSDL')}")
+
+        # TAB C: TẢI ẢNH ĐỐI SOÁT / ĐĂNG KÝ MỚI
+        with ekyc_tab3:
+            sub_col1, sub_col2 = st.columns(2, gap="large")
+            with sub_col1:
+                st.markdown("##### 📁 Tải Ảnh Đối Soát Nhận Diện")
+                up_file = st.file_uploader("Chọn ảnh chân dung kiểm thử", type=["jpg", "jpeg", "png"], key="up_test_face")
+                if up_file is not None and face_engine:
+                    rec_res = face_engine.recognize_face(up_file.getvalue())
+                    if rec_res.get("is_identified"):
+                        st.success(f"✅ **Nhận diện khớp:** {rec_res['customer_name']} (CIF: `{rec_res['cif_number']}`) | Độ khớp: **{rec_res['confidence']}%**")
+                        if st.button("Mở Hồ Sơ Khách Hàng Này", key="btn_open_uploaded"):
+                            st.session_state.selected_cif = rec_res["cif_number"]
+                            st.session_state.ekyc_verified = True
+                            st.session_state.ekyc_info = rec_res
+                            st.rerun()
+                    else:
+                        st.warning("⚠️ Không nhận diện được khách hàng trong ảnh này.")
+            with sub_col2:
+                st.markdown("##### ➕ Đăng Ký Khuôn Mặt Mới (Enrollment)")
+                all_cifs = sorted(purchase_history['reviewerID'].unique().tolist())
+                en_cif = st.selectbox("Chọn mã CIF cần đăng ký khuôn mặt:", all_cifs, key="en_cif_sel")
+                cust_recs = purchase_history[purchase_history['reviewerID'] == en_cif]
+                en_name = cust_recs['reviewerName'].iloc[0] if not cust_recs.empty else f"Khách hàng {en_cif}"
+                en_seg = cust_recs['segment'].iloc[0] if not cust_recs.empty else "MASS"
+                
+                en_img = st.file_uploader(f"Tải ảnh chân dung mới cho {en_name} ({en_cif})", type=["jpg", "jpeg", "png"], key="up_enroll_face")
+                if en_img is not None and st.button("💾 Lưu Dữ Liệu Sinh Trắc Học", key="btn_save_enroll"):
+                    if face_engine:
+                        res = face_engine.enroll_customer_face(en_cif, en_name, en_seg, en_img.getvalue())
+                        if res.get("success"):
+                            st.success(f"✅ {res.get('message')}")
+                            st.rerun()
+
+    # --------------------------------------------------------------------------
+    # HIỂN THỊ HỒ SƠ 360 & ĐỀ XUẤT SẢN PHẨM KHI ĐÃ CÓ KHÁCH HÀNG
+    # --------------------------------------------------------------------------
     if selected_name and selected_cif:
         user_records = purchase_history[purchase_history['reviewerID'] == selected_cif]
         user_recs = recommendations[recommendations['reviewerID'] == selected_cif]
@@ -566,38 +781,53 @@ with tab1:
         segment = user_records['segment'].iloc[0] if 'segment' in user_records.columns else "MASS"
         total_tx = len(user_records)
         channels_used = user_records['channel'].value_counts().index.tolist() if 'channel' in user_records.columns else ['APP', 'QUẦY']
-        primary_channel = channels_used[0] if channels_used else "Ứng dụng số VPBank NEO"
+        primary_channel = channels_used[0] if channels_used else "VPBank NEO"
         
         # Badge phân khúc
         if segment == 'DIAMOND':
-            badge_html = "<span class='badge-diamond'>👑 KHÁCH HÀNG DIAMOND VIP</span>"
+            badge_html = "<span class='badge-diamond'>KHÁCH HÀNG DIAMOND VIP</span>"
         elif segment == 'PRIME':
-            badge_html = "<span class='badge-prime'>⭐ KHÁCH HÀNG PRIME PRIORITY</span>"
+            badge_html = "<span class='badge-prime'>KHÁCH HÀNG PRIME PRIORITY</span>"
         else:
-            badge_html = "<span class='badge-mass'>👥 KHÁCH HÀNG MASS</span>"
+            badge_html = "<span class='badge-mass'>KHÁCH HÀNG MASS</span>"
+
+        # Kiểm tra ảnh chân dung
+        face_path = face_engine.get_customer_face_path(selected_cif) if face_engine else None
+        avatar_img_html = ""
+        if face_path and os.path.exists(face_path):
+            try:
+                import base64
+                with open(face_path, "rb") as f:
+                    b64_avatar = base64.b64encode(f.read()).decode("utf-8")
+                avatar_img_html = f'<img src="data:image/jpeg;base64,{b64_avatar}" class="cust-face-portrait" alt="Chân dung {selected_name}">'
+            except Exception:
+                avatar_img_html = ""
             
-        # 1. Hero Card: Chân dung khách hàng 360
+        # 1. Hero Card: Chân dung khách hàng 360 kèm ảnh sinh trắc học
         render_html(f"""
         <div class="cust-profile-card">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <div>
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 2rem;">👤</span>
-                        <div>
-                            <span style="font-size: 1.4rem; font-weight: 800; color: #0A2540;">{selected_name}</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    {avatar_img_html}
+                    <div>
+                        <div style="font-size: 1.4rem; font-weight: 800; color: #0A2540;">
+                            {selected_name}
                             <span style="color: #64748B; font-size: 0.95rem; margin-left: 8px;">(Mã CIF: <b>{selected_cif}</b>)</span>
-                            <div style="margin-top: 4px;">{badge_html}</div>
+                        </div>
+                        <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            {badge_html}
+                            <span class="ekyc-verified-badge">🛡️ eKYC: FACEID ACTIVE</span>
                         </div>
                     </div>
                 </div>
-                <div style="display: flex; gap: 20px; text-align: right;">
+                <div style="display: flex; gap: 20px; text-align: right; flex-wrap: wrap;">
                     <div>
                         <div style="font-size: 0.78rem; color: #64748B; font-weight: 600; text-transform: uppercase;">Trạng Thái Định Danh</div>
-                        <div style="font-size: 0.95rem; font-weight: 700; color: #00B14F;">✅ eKYC Sinh Trắc Học</div>
+                        <div style="font-size: 0.95rem; font-weight: 700; color: #00B14F;">ĐÃ XÁC THỰC SINH TRẮC HỌC</div>
                     </div>
                     <div>
                         <div style="font-size: 0.78rem; color: #64748B; font-weight: 600; text-transform: uppercase;">Kênh Ưa Chuộng</div>
-                        <div style="font-size: 0.95rem; font-weight: 700; color: #0A2540;">📱 {primary_channel}</div>
+                        <div style="font-size: 0.95rem; font-weight: 700; color: #0A2540;">{primary_channel}</div>
                     </div>
                     <div>
                         <div style="font-size: 0.78rem; color: #64748B; font-weight: 600; text-transform: uppercase;">Giao Dịch Gần Nhất</div>
@@ -609,7 +839,7 @@ with tab1:
         """)
         
         # 2. Tín hiệu nhu cầu & cơ hội thời gian thực (Smart Intent Signals)
-        st.markdown("##### ⚡ Tín Hiệu Nhu Cầu & Bối Cảnh Thời Gian Thực:")
+        st.markdown("##### Tín Hiệu Nhu Cầu & Bối Cảnh Thời Gian Thực:")
         
         user_signals = generate_personalized_signals(user_records, user_recs)
         signals_html = " ".join([f"<span class='signal-pill {css_cls}'>{txt}</span>" for css_cls, txt in user_signals])
@@ -620,7 +850,7 @@ with tab1:
         col_history, col_recs = st.columns([1, 1.25], gap="large")
         
         with col_history:
-            st.markdown("#### 📋 Lịch Sử Giao Dịch & Dịch Vụ Đã Dùng")
+            st.markdown("#### Lịch Sử Giao Dịch & Dịch Vụ Đã Dùng")
             st.caption("Tổng hợp các giao dịch tại quầy, ứng dụng số và thẻ của khách hàng:")
             
             cols_show = [c for c in ['transaction_time', 'title', 'category', 'price', 'channel'] if c in user_records.columns]
@@ -641,7 +871,7 @@ with tab1:
             )
             
         with col_recs:
-            st.markdown("#### 💡 Sản Phẩm Được Đề Xuất Phù Hợp Nhất (Next-Best-Offers)")
+            st.markdown("#### Sản Phẩm Được Đề Xuất Phù Hợp Nhất (Next-Best-Offers)")
             st.caption("Xếp hạng theo độ phù hợp nhu cầu & quy tắc tài chính cá nhân hóa:")
             
             if not user_recs.empty:
@@ -654,42 +884,29 @@ with tab1:
                     p_match = row.get('match_score', '92%')
                     p_script = row.get('gdv_script', 'Gợi ý giải pháp tài chính phù hợp cho khách hàng.')
                     
-                    # Icon theo nhóm
-                    p_icon = "💳"
-                    if "tiết kiệm" in str(p_group).lower() or "tiền gửi" in str(p_group).lower():
-                        p_icon = "💰"
-                    elif "vay" in str(p_group).lower() or "tín dụng" in str(p_group).lower():
-                        p_icon = "🏦"
-                    elif "bảo hiểm" in str(p_group).lower() or "đầu tư" in str(p_group).lower():
-                        p_icon = "🛡️"
-                    elif "ngoại tệ" in str(p_group).lower() or "quốc tế" in str(p_group).lower():
-                        p_icon = "🌐"
-                    elif "tài khoản" in str(p_group).lower() or "số" in str(p_group).lower():
-                        p_icon = "📱"
-                        
                     # Card sản phẩm cao cấp
                     card_html = f"""
 <div class="nba-card">
-<div class="nba-header">
-<div>
-<div class="nba-title">{rank}. {p_icon} {p_name}</div>
-<div style="font-size: 0.85rem; color: #64748B; margin-top: 2px;">
-Phân nhóm: <b>{p_group}</b>
-</div>
-</div>
-<div class="nba-match">⚡ Phù hợp: {p_match}</div>
-</div>
-<div class="nba-details">
-<div>💵 <b>Hạn mức / Tối thiểu:</b> {p_price}</div>
-<div>📊 <b>Lãi suất / Biểu phí:</b> {p_fee}</div>
-</div>
-<div class="nba-value">
-<b>Giá trị mang lại cho KH:</b> {p_val}
-</div>
-<div class="nba-script">
-<span class="nba-script-tag">🗣️ Kịch Bản Tư Vấn GDV Tại Quầy:</span>
-"{p_script}"
-</div>
+    <div class="nba-header">
+        <div>
+            <div class="nba-title">Top {rank} - {p_name}</div>
+            <div style="font-size: 0.85rem; color: #64748B; margin-top: 2px;">
+                Phân nhóm: <b>{p_group}</b>
+            </div>
+        </div>
+        <div class="nba-match">Độ Phù Hợp: {p_match}</div>
+    </div>
+    <div class="nba-details">
+        <div><b>Hạn mức / Tối thiểu:</b> {p_price}</div>
+        <div><b>Lãi suất / Biểu phí:</b> {p_fee}</div>
+    </div>
+    <div class="nba-value">
+        <b>Giá trị mang lại cho KH:</b> {p_val}
+    </div>
+    <div class="nba-script">
+        <span class="nba-script-tag">Kịch Bản Tư Vấn GDV Tại Quầy:</span>
+        "{p_script}"
+    </div>
 </div>
 """
                     render_html(card_html)
@@ -697,22 +914,22 @@ Phân nhóm: <b>{p_group}</b>
                     # Nút tương tác nhanh cho từng sản phẩm
                     btn_col1, btn_col2, btn_col3 = st.columns([1.2, 1.2, 1])
                     with btn_col1:
-                        if st.button(f"⚡ Mở Hồ Sơ #{rank}", key=f"btn_open_{rank}_{selected_cif}"):
-                            st.toast(f"✅ Đã khởi tạo hồ sơ đăng ký [{p_name}] cho khách hàng {selected_name}!", icon="🎉")
+                        if st.button(f"Mở Hồ Sơ #{rank}", key=f"btn_open_{rank}_{selected_cif}"):
+                            st.toast(f"Đã khởi tạo hồ sơ đăng ký [{p_name}] cho khách hàng {selected_name}!")
                     with btn_col2:
-                        if st.button(f"📱 Gửi App KH #{rank}", key=f"btn_send_{rank}_{selected_cif}"):
-                            st.toast(f"📩 Đã gửi thông báo & ưu đãi [{p_name}] tới ứng dụng VPBank NEO của {selected_name}!", icon="📲")
+                        if st.button(f"Gửi App KH #{rank}", key=f"btn_send_{rank}_{selected_cif}"):
+                            st.toast(f"Đã gửi thông báo & ưu đãi [{p_name}] tới ứng dụng VPBank NEO của {selected_name}!")
                     with btn_col3:
-                        if st.button(f"📋 Lưu Ghi Chú", key=f"btn_note_{rank}_{selected_cif}"):
-                            st.toast(f"📝 Đã ghi nhận phản hồi của khách hàng vào sổ nhật ký giao dịch.", icon="💾")
+                        if st.button(f"Lưu Ghi Chú #{rank}", key=f"btn_note_{rank}_{selected_cif}"):
+                            st.toast("Đã ghi nhận phản hồi của khách hàng vào sổ nhật ký giao dịch.")
                     st.markdown("<div style='margin-bottom: 0.8rem;'></div>", unsafe_allow_html=True)
             else:
                 st.info("Chưa có danh mục sản phẩm đề xuất sẵn cho khách hàng này.")
                 
     else:
         # Giao diện Tổng Quan khi chưa chọn khách hàng cụ thể (Executive Dashboard)
-        st.markdown("### 🌟 Trung Tâm Điều Hành Tiếp Cận & Bán Chéo Chi Nhánh")
-        st.info("💡 **Hướng dẫn:** Vui lòng chọn một khách hàng từ thanh tìm kiếm bên trái để xem Hồ sơ 360° và các Gợi ý sản phẩm phù hợp.")
+        st.markdown("### Trung Tâm Điều Hành Tiếp Cận & Bán Chéo Chi Nhánh")
+        st.info("Hướng dẫn: Vui lòng chọn một khách hàng từ thanh tìm kiếm bên trái để xem Hồ sơ 360° và các Gợi ý sản phẩm phù hợp.")
         
         # 4 Thẻ KPI vận hành
         kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
@@ -720,15 +937,15 @@ Phân nhóm: <b>{p_group}</b>
             render_html("""
             <div class="metric-card">
                 <div class="metric-label">Khách Hàng Quản Lý</div>
-                <div class="metric-value">49</div>
-                <div class="metric-note">↑ 100% Đã định danh eKYC</div>
+                <div class="metric-value">120</div>
+                <div class="metric-note">100% Đã định danh eKYC</div>
             </div>
             """)
         with kpi_col2:
             render_html("""
             <div class="metric-card">
                 <div class="metric-label">Cơ Hội Bán Chéo Sẵn Sàng</div>
-                <div class="metric-value">245</div>
+                <div class="metric-value">600</div>
                 <div class="metric-note">Top 5 Đề xuất/Khách hàng</div>
             </div>
             """)
@@ -745,21 +962,21 @@ Phân nhóm: <b>{p_group}</b>
             <div class="metric-card">
                 <div class="metric-label">Tỉ Lệ Chấp Thuận Gợi Ý</div>
                 <div class="metric-value">78.2%</div>
-                <div class="metric-note">↑ 14.5% so với tháng trước</div>
+                <div class="metric-note">+14.5% so với tháng trước</div>
             </div>
             """)
             
         st.markdown("<br>", unsafe_allow_html=True)
         
         # Bảng Khách hàng chờ tư vấn ưu tiên hôm nay
-        st.markdown("#### 🎯 Hàng Đợi Khách Hàng Ưu Tiên Tiếp Cận Tại Quầy Hôm Nay")
+        st.markdown("#### Hàng Đợi Khách Hàng Ưu Tiên Tiếp Cận Tại Quầy Hôm Nay")
         st.caption("Danh sách khách hàng có tín hiệu giao dịch mới nhất cần giao dịch viên chủ động tư vấn sản phẩm bổ sung:")
         
         priority_rows = []
         for cid in purchase_history['reviewerID'].unique()[:10]:
             u_ph = purchase_history[purchase_history['reviewerID'] == cid]
             u_rc = recommendations[recommendations['reviewerID'] == cid]
-            top_prod = u_rc['title'].iloc[0] if not u_rc.empty else "Thẻ tín dụng hoàn tiền"
+            top_prod = u_rc['title'].iloc[0] if not u_rc.empty else "Thẻ ghi nợ quốc tế"
             top_match = u_rc['match_score'].iloc[0] if not u_rc.empty else "95%"
             
             priority_rows.append({
@@ -778,23 +995,23 @@ Phân nhóm: <b>{p_group}</b>
 # TAB 2: BÁO CÁO CƠ HỘI BÁN CHÉO CHI NHÁNH
 # ==============================================================================
 with tab2:
-    st.markdown("### 📊 Phân Tích Cơ Hội Kinh Doanh & Phân Khúc Toàn Chi Nhánh")
+    st.markdown("### Phân Tích Cơ Hội Kinh Doanh & Phân Khúc Toàn Chi Nhánh")
     st.caption("Báo cáo số liệu thời gian thực hỗ trợ Giám đốc Chi nhánh & Trưởng phòng Dịch vụ Khách hàng:")
     
     col_chart1, col_chart2 = st.columns(2)
     
     with col_chart1:
-        st.markdown("##### 👥 Cơ Cấu Phân Khúc Khách Hàng")
+        st.markdown("##### Cơ Cấu Phân Khúc Khách Hàng")
         seg_dist = purchase_history.drop_duplicates(subset=['reviewerID'])['segment'].value_counts()
         st.bar_chart(seg_dist, color="#0A2540")
         
     with col_chart2:
-        st.markdown("##### 🏆 Top Nhóm Sản Phẩm Được Nhu Cầu Nhiều Nhất")
+        st.markdown("##### Top Nhóm Sản Phẩm Được Nhu Cầu Nhiều Nhất")
         rec_cat_dist = recommendations['category'].value_counts().head(5)
         st.bar_chart(rec_cat_dist, color="#00B14F")
         
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown(r"##### 📋 Danh Sách Khách Hàng Tiềm Năng Cao (Match Score $\ge$ 95%)")
+    st.markdown(r"##### Danh Sách Khách Hàng Tiềm Năng Cao (Match Score $\ge$ 95%)")
     
     high_potential = recommendations[recommendations['match_score'].astype(str).str.contains('95|96|97|98|99|100', regex=True)].drop_duplicates(subset=['reviewerID'])
     if not high_potential.empty:
@@ -813,12 +1030,12 @@ with tab2:
 # TAB 3: DANH MỤC SẢN PHẨM & BIỂU PHÍ ƯU ĐÃI
 # ==============================================================================
 with tab3:
-    st.markdown("### 📦 Danh Mục Sản Phẩm Tài Chính & Chính Sách Ưu Đãi")
+    st.markdown("### Danh Mục Sản Phẩm Tài Chính & Chính Sách Ưu Đãi")
     st.caption("Tra cứu nhanh các gói giải pháp tài chính của ngân hàng đang triển khai:")
     
     if product_catalog is not None and not product_catalog.empty:
         prod_groups = ["Tất cả nhóm"] + sorted(product_catalog['Nhom'].dropna().unique().tolist())
-        sel_group = st.selectbox("📂 Chọn nhóm sản phẩm:", prod_groups)
+        sel_group = st.selectbox("Chọn nhóm sản phẩm:", prod_groups)
         
         display_catalog = product_catalog.copy()
         if sel_group != "Tất cả nhóm":

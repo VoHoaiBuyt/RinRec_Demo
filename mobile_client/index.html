@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VPBank eKYC - Xác Thực Khuôn Mặt Di Động</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #0A192F;
+            color: #FFFFFF;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem;
+            overflow-x: hidden;
+        }
+
+        /* Header Bar */
+        .header {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.8rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .brand-logo {
+            width: 32px;
+            height: 32px;
+            background: #00B14F;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: white;
+        }
+
+        .brand-text h1 {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            letter-spacing: -0.3px;
+        }
+
+        .brand-text p {
+            font-size: 0.72rem;
+            color: #00B14F;
+            font-weight: 600;
+        }
+
+        .session-badge {
+            font-size: 0.75rem;
+            background: rgba(0, 177, 79, 0.15);
+            border: 1px solid #00B14F;
+            color: #34D399;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        /* Camera Box */
+        .camera-container {
+            width: 100%;
+            max-width: 400px;
+            position: relative;
+            margin: 1.2rem auto;
+            border-radius: 24px;
+            overflow: hidden;
+            background: #000;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 2px rgba(0, 177, 79, 0.4);
+            aspect-ratio: 3/4;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        video, #photo-preview {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror selfie */
+        }
+
+        #photo-preview {
+            display: none;
+            transform: none;
+        }
+
+        /* Oval Overlay */
+        .face-oval {
+            position: absolute;
+            width: 72%;
+            height: 78%;
+            border: 3px dashed rgba(0, 177, 79, 0.85);
+            border-radius: 50% / 60% 60% 40% 40%;
+            box-shadow: 0 0 0 9999px rgba(10, 25, 47, 0.65);
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.5rem 0;
+            transition: all 0.3s ease;
+        }
+
+        .face-oval.scanning {
+            border-color: #34D399;
+            border-style: solid;
+            box-shadow: 0 0 0 9999px rgba(10, 25, 47, 0.8), 0 0 30px #00B14F;
+            animation: pulse-glow 1.5s infinite;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.02); opacity: 0.85; }
+        }
+
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 5%;
+            width: 90%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #34D399, transparent);
+            box-shadow: 0 0 15px #34D399;
+            display: none;
+            animation: scan-move 2s infinite linear;
+        }
+
+        @keyframes scan-move {
+            0% { top: 15%; opacity: 0; }
+            30% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { top: 85%; opacity: 0; }
+        }
+
+        .guide-text {
+            font-size: 0.8rem;
+            color: #E2E8F0;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        /* Controls Area */
+        .controls {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 0 0.5rem;
+        }
+
+        .btn-capture {
+            width: 100%;
+            background: linear-gradient(135deg, #00B14F 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 16px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 8px 20px rgba(0, 177, 79, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .btn-capture:active {
+            transform: scale(0.98);
+        }
+
+        .btn-file-input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #E2E8F0;
+            padding: 0.8rem;
+            border-radius: 14px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        /* Modal Overlay for Result */
+        .result-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 25, 47, 0.95);
+            backdrop-filter: blur(12px);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            z-index: 1000;
+            text-align: center;
+        }
+
+        .result-card {
+            background: #112240;
+            border: 1px solid #00B14F;
+            border-radius: 24px;
+            padding: 2rem 1.5rem;
+            max-width: 380px;
+            width: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 30px rgba(0, 177, 79, 0.3);
+        }
+
+        .success-icon {
+            width: 72px;
+            height: 72px;
+            background: rgba(0, 177, 79, 0.2);
+            border: 2px solid #00B14F;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.2rem;
+            margin: 0 auto 1.2rem auto;
+            color: #34D399;
+        }
+
+        .result-title {
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            margin-bottom: 6px;
+        }
+
+        .result-desc {
+            font-size: 0.9rem;
+            color: #94A3B8;
+            margin-bottom: 1.5rem;
+            line-height: 1.4;
+        }
+
+        .cust-badge {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .cust-badge .name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #34D399;
+        }
+
+        .cust-badge .meta {
+            font-size: 0.82rem;
+            color: #CBD5E1;
+            margin-top: 4px;
+        }
+
+        .btn-done {
+            width: 100%;
+            background: #00B14F;
+            color: white;
+            border: none;
+            padding: 0.9rem;
+            border-radius: 14px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #FFFFFF;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="brand">
+            <div class="brand-logo">VP</div>
+            <div class="brand-text">
+                <h1>VPBank eKYC</h1>
+                <p>Smart Counter Biometrics</p>
+            </div>
+        </div>
+        <div class="session-badge" id="session-badge">Phiên: ...</div>
+    </div>
+
+    <!-- Camera Box -->
+    <div class="camera-container">
+        <video id="video" autoplay playsinline muted></video>
+        <img id="photo-preview" alt="Chân dung đã chụp">
+        
+        <div class="face-oval" id="face-oval">
+            <span class="guide-text">Căn chỉnh khuôn mặt vào giữa</span>
+            <div class="scan-line" id="scan-line"></div>
+            <span class="guide-text" id="status-hint">Giữ thẳng đầu và nhìn vào camera</span>
+        </div>
+        <canvas id="canvas" style="display:none;"></canvas>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+        <button class="btn-capture" id="btn-capture" onclick="takeSnapshotAndSubmit()">
+            <span id="btn-icon">📷</span>
+            <span id="btn-text">Chụp Ảnh & Xác Thực eKYC</span>
+        </button>
+
+        <label class="btn-file-input">
+            📁 Tải ảnh chân dung từ thư viện
+            <input type="file" id="file-input" accept="image/*" capture="user" style="display:none;" onchange="handleFileUpload(event)">
+        </label>
+    </div>
+
+    <!-- Result Modal -->
+    <div class="result-modal" id="result-modal">
+        <div class="result-card">
+            <div class="success-icon" id="modal-icon">✓</div>
+            <h2 class="result-title" id="modal-title">Xác Thực Thành Công!</h2>
+            <p class="result-desc" id="modal-desc">Hệ thống đã nhận diện danh tính và tự động đồng bộ sang màn hình Quầy Giao Dịch.</p>
+            
+            <div class="cust-badge" id="modal-cust-badge">
+                <div class="name" id="modal-cust-name">Khách hàng</div>
+                <div class="meta" id="modal-cust-cif">Mã CIF: ... | Độ khớp: 98%</div>
+            </div>
+
+            <button class="btn-done" onclick="window.close(); location.reload();">Hoàn Tất</button>
+        </div>
+    </div>
+
+    <script>
+        // Lấy Session ID từ URL query parameter (?sid=EKYC_XXXX)
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get('sid') || "EKYC_DEMO";
+        document.getElementById('session-badge').textContent = `Phiên: ${sessionId}`;
+
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const photoPreview = document.getElementById('photo-preview');
+        const faceOval = document.getElementById('face-oval');
+        const scanLine = document.getElementById('scan-line');
+        const btnCapture = document.getElementById('btn-capture');
+        const btnText = document.getElementById('btn-text');
+        const btnIcon = document.getElementById('btn-icon');
+        const statusHint = document.getElementById('status-hint');
+
+        let stream = null;
+
+        // Khởi động Camera trước của điện thoại
+        async function startCamera() {
+            try {
+                const constraints = {
+                    video: {
+                        facingMode: 'user',
+                        width: { ideal: 720 },
+                        height: { ideal: 960 }
+                    },
+                    audio: false
+                };
+                stream = await navigator.mediaDevices.getUserMedia(constraints);
+                video.srcObject = stream;
+            } catch (err) {
+                console.warn("Không thể mở trực tiếp WebRTC Camera:", err);
+                statusHint.textContent = "Nhấn 'Tải ảnh chân dung' nếu camera không tự mở";
+            }
+        }
+
+        window.addEventListener('load', startCamera);
+
+        // Chụp ảnh từ Camera và gửi tới Model AI
+        async function takeSnapshotAndSubmit() {
+            if (!video.videoWidth) {
+                // Nếu camera chưa bật, kích hoạt nút tải file
+                document.getElementById('file-input').click();
+                return;
+            }
+
+            // Hiệu ứng bắt đầu quét
+            faceOval.classList.add('scanning');
+            scanLine.style.display = 'block';
+            btnCapture.disabled = true;
+            btnIcon.innerHTML = '<div class="spinner"></div>';
+            btnText.textContent = "Đang nhận diện AI...";
+            statusHint.textContent = "Đang xử lý vector sinh trắc học...";
+
+            // Vẽ frame ảnh lên canvas
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            
+            // Xử lý lật gương ảnh cho chuẩn
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const imageBase64 = canvas.toDataURL('image/jpeg', 0.9);
+            sendImageToServer(imageBase64);
+        }
+
+        // Xử lý khi chọn ảnh từ thư viện hoặc file input
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageBase64 = e.target.result;
+                photoPreview.src = imageBase64;
+                photoPreview.style.display = 'block';
+                video.style.display = 'none';
+
+                faceOval.classList.add('scanning');
+                scanLine.style.display = 'block';
+                btnCapture.disabled = true;
+                btnIcon.innerHTML = '<div class="spinner"></div>';
+                btnText.textContent = "Đang nhận diện AI...";
+                statusHint.textContent = "Đang so khớp với CSDL ngân hàng...";
+
+                sendImageToServer(imageBase64);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Gửi dữ liệu ảnh sang Backend / Model AI
+        async function sendImageToServer(imageBase64) {
+            try {
+                const response = await fetch('/api/submit_face', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        image: imageBase64
+                    })
+                });
+
+                const data = await response.json();
+                handleVerificationResult(data);
+            } catch (err) {
+                console.error("Lỗi gửi ảnh:", err);
+                handleVerificationResult({
+                    success: false,
+                    message: "Không thể kết nối tới máy chủ nhận diện."
+                });
+            }
+        }
+
+        // Hiển thị kết quả nhận diện
+        function handleVerificationResult(data) {
+            faceOval.classList.remove('scanning');
+            scanLine.style.display = 'none';
+            btnCapture.disabled = false;
+            btnIcon.textContent = "📷";
+            btnText.textContent = "Chụp Ảnh & Xác Thực eKYC";
+
+            const modal = document.getElementById('result-modal');
+            const modalIcon = document.getElementById('modal-icon');
+            const modalTitle = document.getElementById('modal-title');
+            const modalDesc = document.getElementById('modal-desc');
+            const modalCustBadge = document.getElementById('modal-cust-badge');
+            const modalCustName = document.getElementById('modal-cust-name');
+            const modalCustCif = document.getElementById('modal-cust-cif');
+
+            if (data.success && data.status === "VERIFIED") {
+                modalIcon.textContent = "✓";
+                modalIcon.style.color = "#34D399";
+                modalIcon.style.borderColor = "#00B14F";
+                modalTitle.textContent = "Xác Thực Thành Công!";
+                modalDesc.textContent = "Thông tin khách hàng đã được gửi trực tiếp tới màn hình của Giao Dịch Viên.";
+                modalCustBadge.style.display = "block";
+                modalCustName.textContent = data.customer_name || "Khách Hàng";
+                modalCustCif.textContent = `Mã CIF: ${data.cif_number} | Phân khúc: ${data.segment || 'MASS'} | Độ tin cậy: ${data.confidence || 98}%`;
+            } else {
+                modalIcon.textContent = "✕";
+                modalIcon.style.color = "#F87171";
+                modalIcon.style.borderColor = "#EF4444";
+                modalTitle.textContent = "Chưa Nhận Diện Được";
+                modalDesc.textContent = data.message || "Vui lòng chụp lại rõ nét khuôn mặt hoặc liên hệ giao dịch viên tại quầy.";
+                modalCustBadge.style.display = "none";
+            }
+
+            modal.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
