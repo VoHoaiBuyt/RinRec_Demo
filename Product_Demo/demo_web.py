@@ -736,10 +736,11 @@ render_html(f"""
 # SIDEBAR: BỘ LỌC KHÁCH HÀNG & TRUY VẤN HỒ SƠ
 # ==============================================================================
 # ==============================================================================
-# KHỞI TẠO SESSION STATE CHO EKYC & CHỌN KHÁCH HÀNG
+# KHỞI TẠO SESSION STATE CHO EKYC & CHỌN KHÁCH HÀNG (PERSISTENT VIA QUERY PARAMS)
 # ==============================================================================
 if "selected_cif" not in st.session_state:
-    st.session_state.selected_cif = None
+    query_cif = st.query_params.get("cif", None)
+    st.session_state.selected_cif = query_cif
 if "ekyc_verified" not in st.session_state:
     st.session_state.ekyc_verified = False
 if "ekyc_info" not in st.session_state:
@@ -777,7 +778,7 @@ with st.sidebar:
     
     customer_list = ['-- Chọn hoặc tìm kiếm khách hàng --'] + sorted(user_unique['display'].tolist())
     
-    # Đồng bộ với session_state khi được nhận diện qua eKYC
+    # Đồng bộ với session_state khi được nhận diện qua eKYC hoặc URL
     default_idx = 0
     if st.session_state.selected_cif:
         for idx, item in enumerate(customer_list):
@@ -794,10 +795,14 @@ with st.sidebar:
                 st.session_state.selected_cif = curr_cif
                 st.session_state.ekyc_verified = False
                 st.session_state.ekyc_info = None
+                st.query_params["cif"] = curr_cif
         except Exception:
             pass
     elif selected_customer_str == '-- Chọn hoặc tìm kiếm khách hàng --' and st.session_state.selected_cif is not None and not st.session_state.ekyc_verified:
         st.session_state.selected_cif = None
+        if "cif" in st.query_params:
+            del st.query_params["cif"]
+
     
     st.markdown("---")
     
@@ -959,6 +964,7 @@ with tab1:
                             st.session_state.selected_cif = rec_res["cif_number"]
                             st.session_state.ekyc_verified = True
                             st.session_state.ekyc_info = rec_res
+                            st.query_params["cif"] = rec_res["cif_number"]
                             st.rerun()
                     else:
                         st.warning(f"⚠️ {rec_res.get('message', 'Không tìm thấy khuôn mặt khớp trong CSDL')}")
@@ -977,11 +983,12 @@ with tab1:
                             st.session_state.selected_cif = rec_res["cif_number"]
                             st.session_state.ekyc_verified = True
                             st.session_state.ekyc_info = rec_res
+                            st.query_params["cif"] = rec_res["cif_number"]
                             st.rerun()
                     else:
                         st.warning("⚠️ Không nhận diện được khách hàng trong ảnh này.")
             with sub_col2:
-                st.markdown("##### ➕ Đăng Ký Khuôn Mặt Mới (Enrollment)")
+                st.markdown("##### ➕ Đăng Ký Khuôn Mặt Mới (MongoDB Atlas)")
                 all_cifs = sorted(purchase_history['reviewerID'].unique().tolist())
                 en_cif = st.selectbox("Chọn mã CIF cần đăng ký khuôn mặt:", all_cifs, key="en_cif_sel")
                 cust_recs = purchase_history[purchase_history['reviewerID'] == en_cif]
@@ -989,12 +996,26 @@ with tab1:
                 en_seg = cust_recs['segment'].iloc[0] if not cust_recs.empty else "MASS"
                 
                 en_img = st.file_uploader(f"Tải ảnh chân dung mới cho {en_name} ({en_cif})", type=["jpg", "jpeg", "png"], key="up_enroll_face")
-                if en_img is not None and st.button("💾 Lưu Dữ Liệu Sinh Trắc Học", key="btn_save_enroll"):
+                if en_img is not None and st.button("💾 Lưu Vào MongoDB & Bộ Nhớ Sinh Trắc Học", key="btn_save_enroll"):
                     if face_engine:
-                        res = face_engine.enroll_customer_face(en_cif, en_name, en_seg, en_img.getvalue())
-                        if res.get("success"):
-                            st.success(f"✅ {res.get('message')}")
-                            st.rerun()
+                        with st.spinner("Đang trích xuất vector và đồng bộ vào MongoDB Atlas..."):
+                            res = face_engine.enroll_customer_face(en_cif, en_name, en_seg, en_img.getvalue())
+                            if res.get("success"):
+                                st.session_state.selected_cif = en_cif
+                                st.session_state.ekyc_verified = True
+                                st.session_state.ekyc_info = {
+                                    "is_identified": True,
+                                    "cif_number": en_cif,
+                                    "customer_name": en_name,
+                                    "segment": en_seg,
+                                    "confidence": 100.0,
+                                    "engine": "MongoDB Atlas eKYC Biometrics"
+                                }
+                                st.query_params["cif"] = en_cif
+                                st.success(f"✅ {res.get('message')}")
+                                st.toast("Đã lưu thành công vào MongoDB Atlas!")
+                                time.sleep(0.5)
+                                st.rerun()
 
     # --------------------------------------------------------------------------
     # HIỂN THỊ HỒ SƠ 360 & ĐỀ XUẤT SẢN PHẨM KHI ĐÃ CÓ KHÁCH HÀNG

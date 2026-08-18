@@ -91,6 +91,96 @@ def save_df_to_collection(collection_name: str, df: pd.DataFrame, drop_existing:
     except Exception as e:
         print(f"⚠️ Lỗi khi ghi vào collection '{collection_name}': {e}")
 
+def upsert_customer_face(cif_number: str, data: dict) -> bool:
+    """
+    Lưu hoặc cập nhật thông tin và vector khuôn mặt khách hàng vào MongoDB (collection 'customer_faces').
+    """
+    try:
+        db = get_database()
+        col = db["customer_faces"]
+        cif_clean = str(cif_number).strip().upper()
+        data["cif_number"] = cif_clean
+        col.update_one({"cif_number": cif_clean}, {"$set": data}, upsert=True)
+        print(f"✅ Đã lưu dữ liệu khuôn mặt của CIF '{cif_clean}' vào MongoDB collection 'customer_faces'.")
+        return True
+    except Exception as e:
+        print(f"⚠️ Lỗi khi lưu dữ liệu khuôn mặt vào MongoDB: {e}")
+        return False
+
+def get_customer_faces(query: dict = None) -> list:
+    """
+    Lấy danh sách thông tin khuôn mặt khách hàng từ MongoDB collection 'customer_faces'.
+    """
+    try:
+        db = get_database()
+        col = db["customer_faces"]
+        cursor = col.find(query or {}, {"_id": 0})
+        return list(cursor)
+    except Exception as e:
+        print(f"⚠️ Lỗi khi truy vấn danh sách khuôn mặt từ MongoDB: {e}")
+        return []
+
+def get_customer_face(cif_number: str) -> dict:
+    """
+    Lấy thông tin khuôn mặt của một khách hàng theo CIF từ MongoDB.
+    """
+    try:
+        db = get_database()
+        col = db["customer_faces"]
+        cif_clean = str(cif_number).strip().upper()
+        res = col.find_one({"cif_number": cif_clean}, {"_id": 0})
+        return res or {}
+    except Exception as e:
+        print(f"⚠️ Lỗi khi truy vấn khuôn mặt CIF '{cif_number}' từ MongoDB: {e}")
+        return {}
+
+def delete_customer_face(cif_number: str) -> bool:
+    """
+    Xóa dữ liệu khuôn mặt của một khách hàng khỏi MongoDB.
+    """
+    try:
+        db = get_database()
+        col = db["customer_faces"]
+        cif_clean = str(cif_number).strip().upper()
+        col.delete_one({"cif_number": cif_clean})
+        print(f"✅ Đã xóa dữ liệu khuôn mặt CIF '{cif_clean}' khỏi MongoDB.")
+        return True
+    except Exception as e:
+        print(f"⚠️ Lỗi khi xóa dữ liệu khuôn mặt từ MongoDB: {e}")
+        return False
+
+def update_customer_ekyc_status(cif_number: str, status: str = "ENROLLED", full_name: str = None, segment: str = None) -> bool:
+    """
+    Cập nhật trạng thái sinh trắc học eKYC trong bảng dim_customer trên MongoDB.
+    """
+    try:
+        db = get_database()
+        col = db["dim_customer"]
+        cif_clean = str(cif_number).strip().upper()
+        
+        # Trích xuất số nguyên ID nếu có định dạng CUST_0093 -> 93
+        num_id = None
+        digits = "".join(filter(str.isdigit, cif_clean))
+        if digits:
+            num_id = int(digits)
+            
+        filters = [{"cif_number": cif_clean}]
+        if num_id is not None:
+            filters.append({"customer_id": num_id})
+            filters.append({"cif_number": f"CIF{num_id:07d}"})
+            
+        update_fields = {"kyc_biometric_status": status}
+        if full_name:
+            update_fields["full_name"] = full_name
+        if segment:
+            update_fields["segment"] = segment
+            
+        col.update_many({"$or": filters}, {"$set": update_fields})
+        return True
+    except Exception as e:
+        print(f"⚠️ Lỗi khi cập nhật trạng thái eKYC vào dim_customer: {e}")
+        return False
+
 def test_connection():
     """Kiểm tra kết nối và in danh sách collection hiện có"""
     try:
@@ -107,3 +197,4 @@ def test_connection():
 
 if __name__ == "__main__":
     test_connection()
+

@@ -102,6 +102,16 @@ def setup_faces():
         {"cif": "CUST_0015", "name": "Trần Thị Mai", "segment": "PRIME", "bg": (245, 240, 248), "skin": (252, 222, 200), "hair": (50, 30, 20), "gender": "F"},
     ]
 
+    try:
+        from face_engine.face_recognizer import get_face_engine
+        engine = get_face_engine(faces_dir)
+    except Exception:
+        try:
+            from face_recognizer import get_face_engine
+            engine = get_face_engine(faces_dir)
+        except Exception:
+            engine = None
+
     for cust in customers:
         img_rgb = create_synthetic_portrait(
             cif=cust["cif"],
@@ -115,6 +125,16 @@ def setup_faces():
         file_path = os.path.join(faces_dir, f"{cust['cif']}.jpg")
         cv2.imwrite(file_path, cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR))
         print(f"[OK] Created face portrait: {file_path}")
+        
+        if engine is not None:
+            engine.enroll_customer_face(
+                cif_number=cust["cif"],
+                customer_name=cust["name"],
+                segment=cust["segment"],
+                image_input=img_rgb
+            )
+            print(f"[OK] Synced {cust['cif']} ({cust['name']}) to MongoDB Atlas & Cache.")
 
 if __name__ == "__main__":
     setup_faces()
+
