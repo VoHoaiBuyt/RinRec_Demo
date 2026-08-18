@@ -18,7 +18,10 @@ if sys.stdout.encoding.lower() != 'utf-8':
     except Exception:
         pass
 
-from mongo_connector import get_collection_df, save_df_to_collection
+try:
+    from core.mongo_connector import get_collection_df, save_df_to_collection
+except ImportError:
+    from mongo_connector import get_collection_df, save_df_to_collection
 
 def run_data_pipeline():
     print("=" * 70)

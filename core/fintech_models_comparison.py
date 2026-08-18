@@ -34,8 +34,12 @@ torch.manual_seed(SEED)
 np.random.seed(SEED)
 random.seed(SEED)
 
-DEMO_DIR = os.path.join(os.path.dirname(__file__), "Product_Demo")
-IMAGES_DIR = os.path.join(os.path.dirname(__file__), "images")
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT_DIR not in sys.path:
+    sys.path.insert(0, ROOT_DIR)
+
+DEMO_DIR = os.path.join(ROOT_DIR, "Product_Demo")
+IMAGES_DIR = os.path.join(ROOT_DIR, "docs", "images")
 
 os.makedirs(DEMO_DIR, exist_ok=True)
 os.makedirs(IMAGES_DIR, exist_ok=True)
@@ -47,7 +51,10 @@ print("=" * 80)
 # ============================================================================
 # 1. NẠP DỮ LIỆU TỪ MONGODB ATLAS (RinRec_DB)
 # ============================================================================
-from mongo_connector import get_collection_df, save_df_to_collection
+try:
+    from core.mongo_connector import get_collection_df, save_df_to_collection
+except ImportError:
+    from mongo_connector import get_collection_df, save_df_to_collection
 
 print("📡 Đang tải dữ liệu từ MongoDB Atlas (RinRec_DB)...")
 df_customers = get_collection_df("dim_customer")

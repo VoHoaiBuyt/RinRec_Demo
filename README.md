@@ -95,7 +95,52 @@ Thực nghiệm đo lường trên tập kiểm thử (Test Set 20%) với 5 ch�
 
 ---
 
-## 🏗️ 8. Tech Stack
+## 📁 8. Cấu Trúc Dự Án (Project Structure)
+
+```
+RinRec_Demo/
+├── core/                                # Module Lõi Xử Lý Dữ Liệu & Mô Hình AI
+│   ├── __init__.py
+│   ├── mongo_connector.py               # Kết nối & truy vấn MongoDB Atlas
+│   ├── fintech_data_pipeline.py         # Pipeline tiền xử lý & tạo đồ thị Bipartite
+│   └── fintech_models_comparison.py     # Huấn luyện & Đánh giá 5 mô hình ML/GCN
+│
+├── notebooks/                           # Toàn bộ Jupyter Notebooks nghiên cứu
+│   ├── 01_Financial_Data_Processing.ipynb
+│   ├── 02_Financial_Recommendation_System.ipynb
+│   └── 03_Recommend_Using_UltraGCN.ipynb
+│
+├── face_engine/                         # Module eKYC & Nhận diện khuôn mặt
+│   ├── customer_faces/                  # Ảnh chân dung mẫu chuẩn hóa
+│   ├── face_recognizer.py               # Động cơ nhận diện khuôn mặt
+│   ├── session_manager.py               # Quản lý phiên quét QR & kết nối Mobile
+│   ├── setup_sample_faces.py            # Khởi tạo dữ liệu khuôn mặt mẫu
+│   └── test_pipeline.py                 # Kiểm thử nhận diện eKYC
+│
+├── mobile_client/                       # Web App Mobile quét khuôn mặt khách hàng
+│   └── index.html
+│
+├── Product_Demo/                        # Giao diện Web Demo Streamlit (SmartAdvisor)
+│   ├── demo_web.py                      # Ứng dụng Streamlit chính
+│   ├── purchase_history.csv             # Fallback dataset lịch sử GD
+│   └── recommendations.csv              # Fallback dataset kết quả UltraGCN
+│
+├── docs/                                # Tài liệu hướng dẫn & hình ảnh
+│   ├── Tich_Hop_Nhan_Dien_Khuon_mat.md
+│   └── images/
+│       └── model_comparison.png
+│
+├── .devcontainer/                       # Cấu hình môi trường Codespaces / Dev Container
+├── .streamlit/                          # Cấu hình giao diện Streamlit chuẩn
+├── .env                                 # Cấu hình kết nối CSDL
+├── .gitignore                           # Bộ lọc Git chuẩn hóa
+├── requirements.txt                     # Danh sách thư viện phụ thuộc
+└── README.md                            # Tài liệu tổng quan dự án
+```
+
+---
+
+## 🏗️ 9. Tech Stack
 
 * **Ngôn ngữ & Thư viện lõi**: Python 3.10+, PyTorch, Pandas, NumPy, Scikit-learn
 * **Cơ sở dữ liệu đám mây**: MongoDB Atlas (PyMongo, Dnspython)
@@ -105,21 +150,22 @@ Thực nghiệm đo lường trên tập kiểm thử (Test Set 20%) với 5 ch�
 
 ---
 
-## ▶️ 9. Hướng Dẫn Khởi Chạy Demo (Usage)
+## ▶️ 10. Hướng Dẫn Khởi Chạy (Usage)
 
-### 1. Khởi chạy Streamlit Web App (Khuyến nghị)
-1. Mở Terminal / PowerShell và di chuyển vào thư mục `Product_Demo`:
-   ```bash
-   cd Product_Demo
-   ```
-2. Chạy ứng dụng Streamlit:
-   ```bash
-   streamlit run demo_web.py
-   ```
-3. Truy cập trình duyệt tại địa chỉ: **`http://localhost:8501`**
+### 1. Khởi chạy Streamlit Web App
+Chạy ứng dụng Streamlit trực tiếp từ thư mục gốc:
+```bash
+streamlit run Product_Demo/demo_web.py
+```
+Hoặc chuyển vào thư mục `Product_Demo`:
+```bash
+cd Product_Demo
+streamlit run demo_web.py
+```
+Truy cập trình duyệt tại: **`http://localhost:8501`**
 
 ### 2. Huấn luyện lại mô hình và tái tạo file kết quả
 ```bash
-python fintech_models_comparison.py
+python -m core.fintech_models_comparison
 ```
-Hai file `purchase_history.csv` và `recommendations.csv` trong `Product_Demo/` sẽ tự động được cập nhật.
+Hai file `purchase_history.csv` và `recommendations.csv` trong `Product_Demo/` cùng biểu đồ `docs/images/model_comparison.png` sẽ tự động được cập nhật.

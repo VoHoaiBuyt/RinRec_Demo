@@ -37,8 +37,10 @@ except ImportError:
 # Tích hợp kết nối MongoDB Atlas
 try:
     import sys
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-    from mongo_connector import (
+    _root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    if _root_dir not in sys.path:
+        sys.path.insert(0, _root_dir)
+    from core.mongo_connector import (
         upsert_customer_face,
         get_customer_faces,
         get_customer_face,

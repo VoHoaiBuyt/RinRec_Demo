@@ -544,10 +544,8 @@ def generate_personalized_signals(user_records, user_recs):
 # ==============================================================================
 # HÀM TẢI & CACHE DỮ LIỆU SẢN PHẨM / KHÁCH HÀNG TỪ MONGODB ATLAS
 # ==============================================================================
-import sys
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 try:
-    from mongo_connector import get_collection_df
+    from core.mongo_connector import get_collection_df
 except Exception:
     get_collection_df = None
 

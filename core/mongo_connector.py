@@ -14,18 +14,22 @@ if sys.stdout.encoding.lower() != 'utf-8':
     except Exception:
         pass
 
-# Tự động nạp cấu hình từ file .env nếu có
-env_path = os.path.join(os.path.dirname(__file__), ".env")
-if os.path.exists(env_path):
-    try:
-        with open(env_path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    k, v = line.split("=", 1)
-                    os.environ.setdefault(k.strip(), v.strip())
-    except Exception:
-        pass
+# Tự động nạp cấu hình từ file .env nếu có (tìm ở thư mục hiện tại hoặc thư mục cha)
+for env_path in [
+    os.path.join(os.path.dirname(__file__), ".env"),
+    os.path.join(os.path.dirname(__file__), "..", ".env")
+]:
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        os.environ.setdefault(k.strip(), v.strip())
+            break
+        except Exception:
+            pass
 
 # Cấu hình kết nối MongoDB Atlas
 MONGO_USER = os.getenv("MONGO_USER", "rinrec_ad")
