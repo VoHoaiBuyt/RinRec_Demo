@@ -210,13 +210,22 @@ class CrossDeviceSessionManager:
         img.save(buffered, format="PNG")
         return base64.b64encode(buffered.getvalue()).decode("utf-8")
 
-    def create_session(self, duration_sec: int = 180) -> Dict[str, Any]:
+    def create_session(self, duration_sec: int = 180, host_override: Optional[str] = None) -> Dict[str, Any]:
         """Tạo một phiên xác thực eKYC mới kèm mã QR và URL kết nối di động"""
         self.cleanup_expired_sessions()
         session_id = f"EKYC_{uuid.uuid4().hex[:8].upper()}"
         now = time.time()
         
-        mobile_url = f"http://{self.local_ip}:{self.port}/?sid={session_id}"
+        current_ip = host_override if host_override else get_local_ip()
+        self.local_ip = current_ip
+        
+        if ":" in current_ip and not current_ip.startswith("http"):
+            mobile_url = f"http://{current_ip}/?sid={session_id}"
+        elif current_ip.startswith("http"):
+            mobile_url = f"{current_ip.rstrip('/')}/?sid={session_id}"
+        else:
+            mobile_url = f"http://{current_ip}:{self.port}/?sid={session_id}"
+            
         local_url = f"http://localhost:{self.port}/?sid={session_id}"
         qr_base64 = self.generate_qr_base64(mobile_url)
 

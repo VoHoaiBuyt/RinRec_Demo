@@ -674,10 +674,25 @@ with tab1:
         # TAB A: XÁC THỰC QUA DI ĐỘNG (CROSS-DEVICE QR)
         with ekyc_tab1:
             if session_manager:
+                from face_engine.session_manager import get_local_ip
+                detected_ip = get_local_ip()
+                
+                # Cấu hình IP tùy chọn
+                with st.expander("⚙️ **Cài Đặt Mạng & Địa Chỉ IP Máy Chủ**", expanded=False):
+                    custom_ip = st.text_input("Địa chỉ IP máy tính (Wi-Fi LAN IP):", value=detected_ip, key="custom_ip_input", help="Đảm bảo điện thoại và máy tính kết nối cùng 1 mạng Wi-Fi.")
+                    if st.button("Áp Dụng IP Mới & Tạo Lại Mã QR", key="btn_apply_ip"):
+                        new_sess = session_manager.create_session(host_override=custom_ip)
+                        st.session_state.current_ekyc_sid = new_sess["session_id"]
+                        st.session_state.ekyc_verified = False
+                        st.session_state.ekyc_info = None
+                        st.rerun()
+
                 sid = st.session_state.get("current_ekyc_sid")
                 sess = session_manager.get_session(sid) if sid else None
-                if not sess or sess.get("status") == "EXPIRED":
-                    sess = session_manager.create_session()
+                
+                # Tự động tạo lại session nếu phiên hết hạn hoặc IP thay đổi
+                if not sess or sess.get("status") == "EXPIRED" or (detected_ip not in sess.get("mobile_url", "") and "custom_ip_input" not in st.session_state):
+                    sess = session_manager.create_session(host_override=st.session_state.get("custom_ip_input", detected_ip))
                     st.session_state.current_ekyc_sid = sess["session_id"]
                     sid = sess["session_id"]
 
@@ -700,11 +715,11 @@ with tab1:
                 with col_info:
                     st.markdown("##### 2. Hướng Dẫn Khách Hàng Thao Tác")
                     st.markdown(f"""
-                    1. Khách hàng dùng **Camera / Zalo / Trình duyệt điện thoại** quét mã QR bên cạnh.
-                    2. Trang web camera di động sẽ tự động mở trên điện thoại:
+                    1. Khách hàng bật **Wi-Fi trên điện thoại** (kết nối **cùng mạng Wi-Fi** với laptop này).
+                    2. Dùng **Camera / Zalo / Trình duyệt điện thoại** quét mã QR bên cạnh:
                        - URL: [`{sess['mobile_url']}`]({sess['mobile_url']})
-                    3. Khách hàng căn mặt vào khung oval và bấm **"Chụp & Gửi Xác Thực"**.
-                    4. Model AI trích xuất vector 128D, so khớp với CSDL ngân hàng và đồng bộ kết quả về quầy tức thì.
+                    3. Hoặc **[👉 Bấm vào đây để mở test Camera ngay trên trình duyệt máy tính]({sess['local_url']})**.
+                    4. Khách hàng căn mặt vào khung oval và bấm **"Chụp & Gửi Xác Thực"** để kích hoạt hồ sơ tại quầy.
                     """)
                     
                     btn_c1, btn_c2 = st.columns(2)
@@ -724,11 +739,13 @@ with tab1:
                                 st.error("❌ Không nhận diện được khuôn mặt trong ảnh gửi về.")
                     with btn_c2:
                         if st.button("➕ Tạo Mã QR Phiên Mới", key="btn_new_sess"):
-                            new_sess = session_manager.create_session()
+                            new_sess = session_manager.create_session(host_override=st.session_state.get("custom_ip_input", detected_ip))
                             st.session_state.current_ekyc_sid = new_sess["session_id"]
                             st.session_state.ekyc_verified = False
                             st.session_state.ekyc_info = None
                             st.rerun()
+                            
+                    st.info("💡 **Mẹo**: Nếu mạng Wi-Fi có bảo mật chặn kết nối giữa 2 thiết bị (Client Isolation), bạn có thể bật **Điểm phát sóng di động (Hotspot)** từ điện thoại cho laptop bắt chung.")
             else:
                 st.error(f"❌ Không thể tải Module Session Manager ({face_engine_error if face_engine_error else 'Vui lòng nhấn Rerun hoặc khởi động lại Streamlit'}).")
 
