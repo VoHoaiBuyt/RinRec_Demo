@@ -7,7 +7,6 @@ import sys
 import time
 import base64
 from PIL import Image
-import cv2
 
 # Thêm root vào sys.path
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

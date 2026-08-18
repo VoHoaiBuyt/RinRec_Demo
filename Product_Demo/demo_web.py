@@ -283,8 +283,12 @@ html, body, [class*="css"] {
 </style>""", unsafe_allow_html=True)
 
 # Helper render HTML an toàn không bị dính thụt dòng Markdown
-def render_html(html_str):
-    st.markdown(textwrap.dedent(html_str).strip(), unsafe_allow_html=True)
+def render_html(html_str: str):
+    if hasattr(st, 'html'):
+        st.html(html_str)
+    else:
+        cleaned = "\n".join(line.strip() for line in html_str.split("\n") if line.strip())
+        st.markdown(cleaned, unsafe_allow_html=True)
 
 def generate_personalized_signals(user_records, user_recs):
     """Trích xuất tín hiệu nhu cầu cá nhân hóa thực tế cho từng khách hàng (Tiếng Việt chuẩn, không emoji rườm rà)"""
