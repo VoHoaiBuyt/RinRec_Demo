@@ -280,6 +280,132 @@ html, body, [class*="css"] {
     align-items: center;
     gap: 4px;
 }
+
+/* ==============================================================================
+   ENTERPRISE BANKING CARDS & TABLES (THEME NAVY BLUE & GOLD ACCENT - STYLE NH)
+   ============================================================================== */
+.banking-panel {
+    background: #FFFFFF;
+    border: 1px solid #CBD5E1;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(10, 37, 64, 0.06);
+}
+.banking-panel-header {
+    background: linear-gradient(135deg, #0A2540 0%, #133963 100%);
+    padding: 0.8rem 1.25rem;
+    color: #FBBF24 !important;
+    font-size: 0.96rem;
+    font-weight: 800;
+    letter-spacing: 0.3px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #00B14F;
+}
+.banking-panel-header * {
+    color: #FBBF24 !important;
+}
+.banking-panel-header-badge {
+    background: rgba(251, 191, 36, 0.18);
+    border: 1px solid rgba(251, 191, 36, 0.5);
+    color: #FBBF24 !important;
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 700;
+}
+.banking-panel-body {
+    padding: 0;
+    background: #FFFFFF;
+}
+.banking-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    text-align: left;
+}
+.banking-table th {
+    background: #F1F5F9;
+    color: #334155;
+    font-weight: 700;
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid #CBD5E1;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+.banking-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #E2E8F0;
+    color: #1E293B;
+    vertical-align: middle;
+    line-height: 1.45;
+}
+.banking-table tr:hover {
+    background-color: #F8FAFC;
+}
+.banking-table tr:last-child td {
+    border-bottom: none;
+}
+
+.badge-diamond-small {
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+    color: #FFFFFF !important;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-block;
+}
+.badge-prime-small {
+    background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+    color: #FFFFFF !important;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-block;
+}
+.badge-mass-small {
+    background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
+    color: #FFFFFF !important;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: inline-block;
+}
+.badge-match-score {
+    background: #ECFDF5;
+    border: 1px solid #A7F3D0;
+    color: #047857 !important;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-weight: 800;
+    font-size: 0.8rem;
+    display: inline-block;
+}
+.badge-channel {
+    background: #F1F5F9;
+    border: 1px solid #CBD5E1;
+    color: #475569;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.78rem;
+}
+.code-cif {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    color: #0A2540;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-family: monospace;
+    font-size: 0.84rem;
+}
 </style>""", unsafe_allow_html=True)
 
 # Helper render HTML an toàn không bị dính thụt dòng Markdown
@@ -289,6 +415,61 @@ def render_html(html_str: str):
     else:
         cleaned = "\n".join(line.strip() for line in html_str.split("\n") if line.strip())
         st.markdown(cleaned, unsafe_allow_html=True)
+
+def render_banking_table(title: str, df: pd.DataFrame, max_height: Optional[int] = None, badge_text: Optional[str] = None):
+    """Render bảng dữ liệu chuẩn phong cách Enterprise Banking Card (Header Navy Blue, chữ vàng/trắng, phân cách rõ ràng)"""
+    if df is None or df.empty:
+        st.info("Chưa có dữ liệu.")
+        return
+
+    badge_html = f'<span class="banking-panel-header-badge">{badge_text}</span>' if badge_text else ''
+    headers_html = "".join([f"<th>{col}</th>" for col in df.columns])
+    
+    rows_html = []
+    for _, row in df.iterrows():
+        cells_html = []
+        for col in df.columns:
+            val = str(row[col]) if pd.notna(row[col]) else "-"
+            # Định dạng đặc thù theo từng cột
+            if col in ['Phân Khúc']:
+                if val == 'DIAMOND':
+                    cell_content = '<span class="badge-diamond-small">DIAMOND</span>'
+                elif val == 'PRIME':
+                    cell_content = '<span class="badge-prime-small">PRIME</span>'
+                else:
+                    cell_content = '<span class="badge-mass-small">MASS</span>'
+            elif col in ['Độ Phù Hợp', 'Match Score']:
+                cell_content = f'<span class="badge-match-score">{val}</span>'
+            elif col in ['Kênh']:
+                cell_content = f'<span class="badge-channel">{val}</span>'
+            elif col in ['Mã CIF', 'Mã SP']:
+                cell_content = f'<code class="code-cif">{val}</code>'
+            else:
+                cell_content = val
+            cells_html.append(f"<td>{cell_content}</td>")
+        rows_html.append(f"<tr>{''.join(cells_html)}</tr>")
+    
+    scroll_style = f"max-height: {max_height}px; overflow-y: auto;" if max_height else ""
+    
+    table_html = f"""
+    <div class="banking-panel">
+        <div class="banking-panel-header">
+            <span>{title}</span>
+            {badge_html}
+        </div>
+        <div class="banking-panel-body" style="{scroll_style}">
+            <table class="banking-table">
+                <thead>
+                    <tr>{headers_html}</tr>
+                </thead>
+                <tbody>
+                    {''.join(rows_html)}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    """
+    render_html(table_html)
 
 def generate_personalized_signals(user_records, user_recs):
     """Trích xuất tín hiệu nhu cầu cá nhân hóa thực tế cho từng khách hàng (Tiếng Việt chuẩn, không emoji rườm rà)"""
@@ -530,8 +711,6 @@ purchase_history, recommendations, product_catalog, is_mongo = load_app_data()
 # ==============================================================================
 # THANH HEADER TRUNG TÂM VẬN HÀNH (TOP BRAND BAR)
 # ==============================================================================
-mongo_status_badge = "MONGODB ATLAS: ĐÃ KẾT NỐI (RinRec_DB)" if is_mongo else "VẬN HÀNH: BỘ NHỚ ĐỆM CỤC BỘ"
-
 render_html(f"""
 <div class="top-brand-bar">
     <div>
@@ -543,9 +722,11 @@ render_html(f"""
         </div>
     </div>
     <div style="text-align: right;">
-        <div class="top-badge-live">{mongo_status_badge}</div>
-        <div style="font-size: 0.8rem; color: #CBD5E1; margin-top: 5px;">
-            Chi nhánh Hội Sở | Giao dịch viên: <b>Nguyễn Thu Hà (VP8832)</b>
+        <div style="font-size: 0.92rem; color: #FFFFFF; font-weight: 700;">
+            🏢 Chi nhánh Hội Sở
+        </div>
+        <div style="font-size: 0.82rem; color: #E2E8F0; margin-top: 4px;">
+            Giao dịch viên: <b>Nguyễn Thu Hà (VP8832)</b>
         </div>
     </div>
 </div>
@@ -894,9 +1075,6 @@ with tab1:
         col_history, col_recs = st.columns([1, 1.25], gap="large")
         
         with col_history:
-            st.markdown("#### Lịch Sử Giao Dịch & Dịch Vụ Đã Dùng")
-            st.caption("Tổng hợp các giao dịch tại quầy, ứng dụng số và thẻ của khách hàng:")
-            
             cols_show = [c for c in ['transaction_time', 'title', 'category', 'price', 'channel'] if c in user_records.columns]
             rename_map = {
                 'transaction_time': 'Thời Gian',
@@ -907,11 +1085,11 @@ with tab1:
             }
             
             df_display = user_records[cols_show].rename(columns=rename_map)
-            st.dataframe(
+            render_banking_table(
+                "THÔNG TIN LỊCH SỬ GIAO DỊCH & DỊCH VỤ",
                 df_display,
-                use_container_width=True,
-                height=520,
-                hide_index=True
+                max_height=520,
+                badge_text=f"{len(df_display)} giao dịch"
             )
             
         with col_recs:
@@ -1033,7 +1211,11 @@ with tab1:
             })
             
         df_priority = pd.DataFrame(priority_rows)
-        st.dataframe(df_priority, use_container_width=True, hide_index=True)
+        render_banking_table(
+            "THÔNG TIN HÀNG ĐỢI KHÁCH HÀNG ƯU TIÊN TIẾP CẬN TẠI QUẦY",
+            df_priority,
+            badge_text=f"{len(df_priority)} Khách hàng"
+        )
 
 # ==============================================================================
 # TAB 2: BÁO CÁO CƠ HỘI BÁN CHÉO CHI NHÁNH
@@ -1055,7 +1237,6 @@ with tab2:
         st.bar_chart(rec_cat_dist, color="#00B14F")
         
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown(r"##### Danh Sách Khách Hàng Tiềm Năng Cao (Match Score $\ge$ 95%)")
     
     high_potential = recommendations[recommendations['match_score'].astype(str).str.contains('95|96|97|98|99|100', regex=True)].drop_duplicates(subset=['reviewerID'])
     if not high_potential.empty:
@@ -1068,7 +1249,11 @@ with tab2:
             'category': 'Nhóm Sản Phẩm',
             'match_score': 'Độ Phù Hợp'
         }
-        st.dataframe(high_potential[cols_hp].rename(columns=rename_hp), use_container_width=True, hide_index=True)
+        render_banking_table(
+            "DANH SÁCH KHÁCH HÀNG TIỀM NĂNG CAO (MATCH SCORE ≥ 95%)",
+            high_potential[cols_hp].rename(columns=rename_hp),
+            badge_text=f"{len(high_potential)} Khách hàng mục tiêu"
+        )
 
 # ==============================================================================
 # TAB 3: DANH MỤC SẢN PHẨM & BIỂU PHÍ ƯU ĐÃI
@@ -1081,27 +1266,56 @@ with tab3:
         prod_groups = ["Tất cả nhóm"] + sorted(product_catalog['Nhom'].dropna().unique().tolist())
         sel_group = st.selectbox("Chọn nhóm sản phẩm:", prod_groups)
         
-        display_catalog = product_catalog.copy()
-        if sel_group != "Tất cả nhóm":
-            display_catalog = display_catalog[display_catalog['Nhom'] == sel_group]
-            
-        cols_cat = ['Ma_SP', 'Nhom', 'Ten_san_pham', 'Gia_tri_cot_loi', 'Phan_khuc', 'So_tien_toi_thieu', 'Lai_suat_Phi']
+        cols_cat = ['Ma_SP', 'Ten_san_pham', 'Gia_tri_cot_loi', 'Phan_khuc', 'So_tien_toi_thieu', 'Lai_suat_Phi']
         rename_cat = {
             'Ma_SP': 'Mã SP',
-            'Nhom': 'Nhóm Sản Phẩm',
             'Ten_san_pham': 'Tên Sản Phẩm',
             'Gia_tri_cot_loi': 'Giá Trị Cốt Lõi',
             'Phan_khuc': 'Phân Khúc Áp Dụng',
             'So_tien_toi_thieu': 'Hạn Mức / Tối Thiểu',
             'Lai_suat_Phi': 'Lãi Suất / Biểu Phí'
         }
-        st.dataframe(display_catalog[cols_cat].rename(columns=rename_cat), use_container_width=True, hide_index=True)
+        
+        if sel_group == "Tất cả nhóm":
+            for grp in sorted(product_catalog['Nhom'].dropna().unique().tolist()):
+                grp_df = product_catalog[product_catalog['Nhom'] == grp]
+                render_banking_table(
+                    f"THÔNG TIN DANH MỤC: {grp.upper()}",
+                    grp_df[cols_cat].rename(columns=rename_cat),
+                    badge_text=f"{len(grp_df)} Sản phẩm"
+                )
+        else:
+            grp_df = product_catalog[product_catalog['Nhom'] == sel_group]
+            render_banking_table(
+                f"THÔNG TIN DANH MỤC: {sel_group.upper()}",
+                grp_df[cols_cat].rename(columns=rename_cat),
+                badge_text=f"{len(grp_df)} Sản phẩm"
+            )
     else:
         rec_unique_prods = recommendations[['category', 'title', 'price', 'rate_or_fee', 'value_proposition']].drop_duplicates(subset=['title'])
-        st.dataframe(rec_unique_prods.rename(columns={
-            'category': 'Nhóm Sản Phẩm',
+        categories = sorted(rec_unique_prods['category'].dropna().unique().tolist())
+        sel_cat = st.selectbox("Chọn nhóm sản phẩm:", ["Tất cả nhóm"] + categories)
+        
+        cols_rec = ['title', 'price', 'rate_or_fee', 'value_proposition']
+        rename_rec = {
             'title': 'Tên Sản Phẩm',
-            'price': 'Hạn Mức Tối Thiểu',
-            'rate_or_fee': 'Lãi Suất / Phí',
-            'value_proposition': 'Giá Trị Mang Lại'
-        }), use_container_width=True, hide_index=True)
+            'price': 'Hạn Mức / Tối Thiểu',
+            'rate_or_fee': 'Lãi Suất / Biểu Phí',
+            'value_proposition': 'Giá Trị Cốt Lõi'
+        }
+        
+        if sel_cat == "Tất cả nhóm":
+            for cat in categories:
+                cat_df = rec_unique_prods[rec_unique_prods['category'] == cat]
+                render_banking_table(
+                    f"THÔNG TIN DANH MỤC: {cat.upper()}",
+                    cat_df[cols_rec].rename(columns=rename_rec),
+                    badge_text=f"{len(cat_df)} Sản phẩm"
+                )
+        else:
+            cat_df = rec_unique_prods[rec_unique_prods['category'] == sel_cat]
+            render_banking_table(
+                f"THÔNG TIN DANH MỤC: {sel_cat.upper()}",
+                cat_df[cols_rec].rename(columns=rename_rec),
+                badge_text=f"{len(cat_df)} Sản phẩm"
+            )
