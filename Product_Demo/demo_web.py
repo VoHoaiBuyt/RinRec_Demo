@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import sys
 import time
@@ -410,6 +411,115 @@ html, body, [class*="css"] {
     font-family: monospace;
     font-size: 0.84rem;
 }
+
+/* ==============================================================================
+   CUSTOMER QUEUE GRID CARDS (VẼ TỪNG Ô KHÁCH HÀNG ƯU TIÊN)
+   ============================================================================== */
+.cust-card-box {
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 14px;
+    padding: 1.1rem 1.2rem;
+    box-shadow: 0 4px 12px rgba(10, 37, 64, 0.05);
+    transition: all 0.25s ease-in-out;
+    margin-bottom: 0.5rem;
+    border-top: 4px solid #00B14F;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+.cust-card-box.diamond {
+    border-top: 4px solid #F59E0B;
+    background: linear-gradient(180deg, #FFFDF5 0%, #FFFFFF 100%);
+}
+.cust-card-box.prime {
+    border-top: 4px solid #6366F1;
+    background: linear-gradient(180deg, #F8F9FF 0%, #FFFFFF 100%);
+}
+.cust-card-box.mass {
+    border-top: 4px solid #0EA5E9;
+    background: linear-gradient(180deg, #F5FAFF 0%, #FFFFFF 100%);
+}
+.cust-card-box:hover {
+    box-shadow: 0 10px 25px rgba(10, 37, 64, 0.12);
+    transform: translateY(-3px);
+}
+.cust-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.6rem;
+}
+.cust-card-avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: #0A2540;
+    color: #FFFFFF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 0.95rem;
+    margin-right: 10px;
+}
+.cust-card-avatar.diamond {
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+}
+.cust-card-avatar.prime {
+    background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+}
+.cust-card-avatar.mass {
+    background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
+}
+.cust-card-name {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0A2540;
+    line-height: 1.25;
+}
+.cust-card-cif {
+    font-family: monospace;
+    font-size: 0.76rem;
+    color: #64748B;
+    font-weight: 600;
+    margin-top: 2px;
+}
+.cust-card-stats {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: #475569;
+    padding: 0.4rem 0;
+    border-bottom: 1px dashed #E2E8F0;
+    margin-bottom: 0.55rem;
+}
+.cust-card-rec-box {
+    background: #F8FAFC;
+    border: 1px solid #E2E8F0;
+    border-radius: 8px;
+    padding: 0.6rem 0.8rem;
+    margin-bottom: 0.4rem;
+}
+.cust-card-rec-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #047857;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 3px;
+}
+.cust-card-rec-name {
+    font-size: 0.86rem;
+    font-weight: 700;
+    color: #1E293B;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 </style>""", unsafe_allow_html=True)
 
 # Helper render HTML an toàn không bị dính thụt dòng Markdown
@@ -713,11 +823,11 @@ purchase_history, recommendations, product_catalog, is_mongo = load_app_data()
 # ==============================================================================
 # THANH HEADER TRUNG TÂM VẬN HÀNH (TOP BRAND BAR)
 # ==============================================================================
-render_html(f"""
+render_html("""
 <div class="top-brand-bar">
     <div>
         <div class="top-brand-title">
-            <span>VPBank SmartAdvisor 360°</span>
+            <span>VPBank SmartAdvisor 360</span>
         </div>
         <div class="top-brand-sub">
             Hệ thống Trợ lý Tư vấn Bán chéo & Đề xuất Sản phẩm Tài chính Cá nhân hóa tại Quầy
@@ -840,9 +950,9 @@ if selected_cif:
 # ĐIỀU HƯỚNG TABS SẢN PHẨM
 # ==============================================================================
 tab1, tab2, tab3 = st.tabs([
-    "Hồ Sơ Khách Hàng 360° & Đề Xuất Bán Chéo",
-    "Báo Cáo Cơ Hội Bán Chéo Chi Nhánh",
-    "Danh Mục Sản Phẩm & Biểu Phí Ưu Đãi"
+    "🎯 Hồ Sơ Khách Hàng 360° & Đề Xuất Bán Chéo",
+    "📈 Báo Cáo Cơ Hội Kinh Doanh Chi Nhánh",
+    "📦 Danh Mục Sản Phẩm & Biểu Phí Ưu Đãi"
 ])
 
 # ==============================================================================
@@ -1173,8 +1283,8 @@ with tab1:
                 
     else:
         # Giao diện Tổng Quan khi chưa chọn khách hàng cụ thể (Executive Dashboard)
-        st.markdown("### Trung Tâm Điều Hành Tiếp Cận & Bán Chéo Chi Nhánh")
-        st.info("Hướng dẫn: Vui lòng chọn một khách hàng từ thanh tìm kiếm bên trái để xem Hồ sơ 360° và các Gợi ý sản phẩm phù hợp.")
+        st.markdown("### 🌟 Trung Tâm Điều Hành & Phân Tích Khách Hàng Chi Nhánh")
+        st.info("💡 **Hướng dẫn**: Chọn nhanh khách hàng từ danh sách các **ô hàng đợi bên dưới** (bấm *Mở Hồ Sơ & Tư Vấn*) hoặc tra cứu từ thanh tìm kiếm bên trái để xem Hồ sơ 360° và các Gợi ý sản phẩm phù hợp.")
         
         # 4 Thẻ KPI vận hành
         kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
@@ -1213,50 +1323,173 @@ with tab1:
             
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # Bảng Khách hàng chờ tư vấn ưu tiên hôm nay
-        st.markdown("#### Hàng Đợi Khách Hàng Ưu Tiên Tiếp Cận Tại Quầy Hôm Nay")
-        st.caption("Danh sách khách hàng có tín hiệu giao dịch mới nhất cần giao dịch viên chủ động tư vấn sản phẩm bổ sung:")
+        # ======================================================================
+        # HÀNG ĐỢI KHÁCH HÀNG ƯU TIÊN TIẾP CẬN TẠI QUẦY (VẼ TỪNG Ô / GRID CARDS)
+        # ======================================================================
+        st.markdown("#### 🎯 Hàng Đợi Khách Hàng Ưu Tiên Tiếp Cận Tại Quầy Hôm Nay")
+        st.caption("Danh sách khách hàng có tín hiệu giao dịch mới nhất được phân tích và vẽ theo từng ô trực quan kèm nút mở hồ sơ trực tiếp:")
         
-        priority_rows = []
-        for cid in purchase_history['reviewerID'].unique()[:10]:
-            u_ph = purchase_history[purchase_history['reviewerID'] == cid]
-            u_rc = recommendations[recommendations['reviewerID'] == cid]
-            top_prod = u_rc['title'].iloc[0] if not u_rc.empty else "Thẻ ghi nợ quốc tế"
-            top_match = u_rc['match_score'].iloc[0] if not u_rc.empty else "95%"
+        # Bộ lọc phân khúc nhanh cho hàng đợi
+        col_f1, col_f2 = st.columns([1.5, 2.5])
+        with col_f1:
+            queue_filter = st.selectbox(
+                "Lọc hàng đợi tại quầy theo phân khúc:",
+                ["Tất cả hàng đợi (Ưu tiên)", "💎 DIAMOND VIP", "⭐ PRIME Priority", "🔷 MASS Standard"],
+                key="queue_seg_filter"
+            )
+        
+        # Trích xuất danh sách khách hàng ưu tiên đa dạng các phân khúc
+        priority_cifs = []
+        # Ưu tiên các khách hàng DIAMOND
+        diamond_cifs = purchase_history[purchase_history['segment'] == 'DIAMOND']['reviewerID'].unique().tolist()
+        prime_cifs = purchase_history[purchase_history['segment'] == 'PRIME']['reviewerID'].unique().tolist()
+        mass_cifs = purchase_history[purchase_history['segment'] == 'MASS']['reviewerID'].unique().tolist()
+        
+        if queue_filter.startswith("💎"):
+            target_cifs = diamond_cifs
+        elif queue_filter.startswith("⭐"):
+            target_cifs = prime_cifs
+        elif queue_filter.startswith("🔷"):
+            target_cifs = mass_cifs
+        else:
+            # Kết hợp xen kẽ tạo danh sách 12 khách hàng tiêu biểu
+            target_cifs = diamond_cifs[:4] + prime_cifs[:4] + mass_cifs[:4]
             
-            priority_rows.append({
-                'Mã CIF': cid,
-                'Họ và Tên Khách Hàng': u_ph['reviewerName'].iloc[0],
-                'Phân Khúc': u_ph['segment'].iloc[0],
-                'Tổng Lượt Giao Dịch': len(u_ph),
-                'Sản Phẩm Đề Xuất Hàng Đầu': top_prod,
-                'Độ Phù Hợp': top_match
-            })
-            
-        df_priority = pd.DataFrame(priority_rows)
-        render_banking_table(
-            "THÔNG TIN HÀNG ĐỢI KHÁCH HÀNG ƯU TIÊN TIẾP CẬN TẠI QUẦY",
-            df_priority,
-            badge_text=f"{len(df_priority)} Khách hàng"
-        )
+        # Hiển thị dạng lưới ô (3 Cột)
+        num_cols = 3
+        for i in range(0, len(target_cifs), num_cols):
+            row_cifs = target_cifs[i:i+num_cols]
+            cols = st.columns(num_cols)
+            for j, cid in enumerate(row_cifs):
+                with cols[j]:
+                    u_ph = purchase_history[purchase_history['reviewerID'] == cid]
+                    u_rc = recommendations[recommendations['reviewerID'] == cid]
+                    cust_name = u_ph['reviewerName'].iloc[0] if not u_ph.empty else f"Khách hàng {cid}"
+                    seg = u_ph['segment'].iloc[0] if not u_ph.empty else "MASS"
+                    tx_count = len(u_ph)
+                    
+                    # Xác định kênh chính
+                    chans = u_ph['channel'].value_counts() if 'channel' in u_ph.columns and not u_ph.empty else []
+                    primary_chan = chans.index[0] if len(chans) > 0 else "APP"
+                    chan_label = "📱 VPBank NEO" if primary_chan == "APP" else "🏢 Tại Quầy"
+                    
+                    # Avatar chữ cái đầu
+                    name_parts = cust_name.strip().split()
+                    initials = (name_parts[0][0] + name_parts[-1][0]).upper() if len(name_parts) >= 2 else cust_name[:2].upper()
+                    
+                    # Badge phân khúc
+                    seg_class = seg.lower()
+                    if seg == 'DIAMOND':
+                        seg_badge_html = "<span class='badge-diamond-small'>DIAMOND VIP</span>"
+                    elif seg == 'PRIME':
+                        seg_badge_html = "<span class='badge-prime-small'>PRIME</span>"
+                    else:
+                        seg_badge_html = "<span class='badge-mass-small'>MASS</span>"
+                        
+                    # Gợi ý Next-Best-Action tương thích theo phân khúc & lịch sử
+                    rec_row = None
+                    if not u_rc.empty:
+                        # Chọn sản phẩm phù hợp nhất theo đặc trưng phân khúc
+                        if seg == 'DIAMOND':
+                            vip_recs = u_rc[u_rc['category'].isin(['Phân khúc', 'Đầu tư', 'Bảo hiểm'])]
+                            rec_row = vip_recs.iloc[0] if not vip_recs.empty else u_rc.iloc[0]
+                        elif seg == 'PRIME':
+                            prime_recs = u_rc[u_rc['category'].isin(['Thẻ', 'Vay', 'Bảo hiểm'])]
+                            rec_row = prime_recs.iloc[0] if not prime_recs.empty else u_rc.iloc[0]
+                        else:
+                            rec_row = u_rc.iloc[0]
+
+                    if rec_row is not None:
+                        top_prod = rec_row.get('title', 'Gói tài khoản VPBank')
+                        top_group = rec_row.get('category', 'Tài chính')
+                        top_match = rec_row.get('match_score', '95%')
+                    else:
+                        if seg == 'DIAMOND':
+                            top_prod = "Nâng hạng VPBank Diamond / Prime"
+                            top_group = "Hội Viên VIP"
+                            top_match = "98%"
+                        elif seg == 'PRIME':
+                            top_prod = "Thẻ ghi nợ quốc tế VPBank"
+                            top_group = "Thẻ & Ngân Hàng Số"
+                            top_match = "96%"
+                        else:
+                            top_prod = "Gói tài khoản chi lương doanh nghiệp"
+                            top_group = "Gói Doanh Nghiệp"
+                            top_match = "95%"
+                        
+                    card_html = f"""
+                    <div class="cust-card-box {seg_class}">
+                        <div>
+                            <div class="cust-card-header">
+                                <div style="display: flex; align-items: center;">
+                                    <div class="cust-card-avatar {seg_class}">{initials}</div>
+                                    <div>
+                                        <div class="cust-card-name">{cust_name}</div>
+                                        <div class="cust-card-cif">{cid}</div>
+                                    </div>
+                                </div>
+                                <div>{seg_badge_html}</div>
+                            </div>
+                            <div class="cust-card-stats">
+                                <span>📊 Lịch sử: <b>{tx_count} GD</b></span>
+                                <span>{chan_label}</span>
+                            </div>
+                            <div class="cust-card-rec-box">
+                                <div class="cust-card-rec-label">
+                                    <span>🎯 GỢI Ý BÁN CHÉO #1</span>
+                                    <span class="badge-match-score">{top_match}</span>
+                                </div>
+                                <div class="cust-card-rec-name" title="{top_prod}">{top_prod}</div>
+                                <div style="font-size: 0.75rem; color: #64748B; margin-top: 2px;">Nhóm: <b>{top_group}</b></div>
+                            </div>
+                        </div>
+                    </div>
+                    """
+                    render_html(card_html)
+                    
+                    # Nút bấm mở hồ sơ trực tiếp từ ô
+                    if st.button("👉 Mở Hồ Sơ & Tư Vấn", key=f"btn_card_cif_{cid}_{i}_{j}", use_container_width=True):
+                        st.session_state.selected_cif = cid
+                        st.session_state.ekyc_verified = False
+                        st.session_state.ekyc_info = None
+                        st.query_params["cif"] = cid
+                        st.rerun()
+                    st.markdown("<div style='margin-bottom: 0.8rem;'></div>", unsafe_allow_html=True)
 
 # ==============================================================================
-# TAB 2: BÁO CÁO CƠ HỘI BÁN CHÉO CHI NHÁNH
+# TAB 2: BÁO CÁO CƠ HỘI KINH DOANH CHI NHÁNH
 # ==============================================================================
 with tab2:
-    st.markdown("### Phân Tích Cơ Hội Kinh Doanh & Phân Khúc Toàn Chi Nhánh")
+    st.markdown("### 📊 Báo Cáo Cơ Hội Kinh Doanh & Phân Khúc Toàn Chi Nhánh")
     st.caption("Báo cáo số liệu thời gian thực hỗ trợ Giám đốc Chi nhánh & Trưởng phòng Dịch vụ Khách hàng:")
     
     col_chart1, col_chart2 = st.columns(2)
     
     with col_chart1:
-        st.markdown("##### Cơ Cấu Phân Khúc Khách Hàng")
+        st.markdown("##### 👥 Cơ Cấu Phân Khúc Khách Hàng Toàn Chi Nhánh")
         seg_dist = purchase_history.drop_duplicates(subset=['reviewerID'])['segment'].value_counts()
         st.bar_chart(seg_dist, color="#0A2540")
         
     with col_chart2:
-        st.markdown("##### Top Nhóm Sản Phẩm Được Nhu Cầu Nhiều Nhất")
-        rec_cat_dist = recommendations['category'].value_counts().head(5)
+        st.markdown("##### 🏆 Top Nhóm Sản Phẩm Có Cơ Hội Kinh Doanh Lớn Nhất")
+        # Phân bổ nhu cầu thực tế dựa trên hành vi giao dịch và gợi ý cá nhân hóa
+        top_recs_summary = []
+        for cid, group in purchase_history.groupby('reviewerID'):
+            seg = group['segment'].iloc[0]
+            top_cat = group['category'].value_counts().index[0]
+            if 'doanh nghiệp' in top_cat.lower():
+                rec_cat = 'Gói Doanh Nghiệp'
+            elif 'thẻ' in top_cat.lower() or 'thanh toán' in top_cat.lower() or 'số' in top_cat.lower():
+                rec_cat = 'Thẻ & Ngân Hàng Số'
+            elif 'tiết kiệm' in top_cat.lower() or seg == 'DIAMOND':
+                rec_cat = 'Tiết Kiệm & Đầu Tư'
+            elif 'tín dụng' in top_cat.lower():
+                rec_cat = 'Tín Dụng & Cho Vay'
+            else:
+                rec_cat = 'Bảo Hiểm & VIP'
+            top_recs_summary.append(rec_cat)
+            
+        rec_cat_dist = pd.Series(top_recs_summary).value_counts()
         st.bar_chart(rec_cat_dist, color="#00B14F")
         
     st.markdown("<br>", unsafe_allow_html=True)
