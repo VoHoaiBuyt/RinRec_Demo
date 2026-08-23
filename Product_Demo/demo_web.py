@@ -14,6 +14,12 @@ _root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 if _root_dir not in sys.path:
     sys.path.insert(0, _root_dir)
 
+from core.auth import (
+    authenticate_user, get_all_users, create_user, update_user_role,
+    toggle_user_status, reset_user_password, ROLE_TELLER, ROLE_MANAGER,
+    ROLE_ADMIN, ROLE_LABELS, ROLE_BADGE_CLASSES
+)
+
 
 # ==============================================================================
 # CẤU HÌNH TRANG WEB & THEME GIAO DIỆN CHUẨN DOANH NGHIỆP (ENTERPRISE BANKING)
@@ -284,6 +290,42 @@ html, body, [class*="css"] {
     display: inline-flex;
     align-items: center;
     gap: 4px;
+}
+
+/* Login Screen & RBAC CSS */
+.login-container {
+    max-width: 480px;
+    margin: 3rem auto;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 18px;
+    padding: 2.2rem 2.5rem;
+    box-shadow: 0 20px 40px -10px rgba(10, 37, 64, 0.15);
+}
+.login-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+.login-title {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: #0A2540;
+}
+.login-sub {
+    font-size: 0.9rem;
+    color: #64748B;
+    margin-top: 6px;
+}
+.user-sidebar-card {
+    background: linear-gradient(135deg, #0A2540 0%, #163B66 100%);
+    border: 1px solid #00B14F;
+    border-radius: 12px;
+    padding: 1rem;
+    color: white !important;
+    margin-bottom: 1.2rem;
+}
+.user-sidebar-card * {
+    color: white !important;
 }
 
 /* ==============================================================================
@@ -821,9 +863,93 @@ def load_app_data():
 purchase_history, recommendations, product_catalog, is_mongo = load_app_data()
 
 # ==============================================================================
+# KHỞI TẠO SESSION STATE XÁC THỰC & PHÂN QUYỀN (RBAC & LOGIN)
+# ==============================================================================
+if "authenticated_user" not in st.session_state:
+    st.session_state.authenticated_user = None
+
+# ------------------------------------------------------------------------------
+# MÀN HÌNH ĐĂNG NHẬP HỆ THỐNG (ENTERPRISE BANKING LOGIN)
+# ------------------------------------------------------------------------------
+if st.session_state.authenticated_user is None:
+    render_html("""
+    <div class="top-brand-bar">
+        <div>
+            <div class="top-brand-title">
+                <span>VPBank SmartAdvisor 360</span>
+            </div>
+            <div class="top-brand-sub">
+                Hệ thống Trợ lý Tư vấn Bán chéo & Đề xuất Sản phẩm Tài chính Cá nhân hóa (Bảo mật RBAC)
+            </div>
+        </div>
+    </div>
+    """)
+    
+    col_l1, col_l2, col_l3 = st.columns([1, 1.8, 1])
+    with col_l2:
+        st.markdown("""
+        <div class="login-container">
+            <div class="login-header">
+                <div class="login-title">🔐 Đăng Nhập Hệ Thống</div>
+                <div class="login-sub">SmartAdvisor 360 - MongoDB Atlas User Authentication</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        with st.form("login_form"):
+            in_username = st.text_input("👤 Tên đăng nhập:", placeholder="Nhập tên đăng nhập (vd: gdv_ha, manager, admin)...")
+            in_password = st.text_input("🔑 Mật khẩu:", type="password", placeholder="Nhập mật khẩu...")
+            submit_login = st.form_submit_button("🚀 Đăng Nhập Hệ Thống", use_container_width=True)
+            
+            if submit_login:
+                res = authenticate_user(in_username, in_password)
+                if res.get("success"):
+                    st.session_state.authenticated_user = res.get("user")
+                    st.toast(res.get("message"))
+                    time.sleep(0.3)
+                    st.rerun()
+                else:
+                    st.error(res.get("message"))
+                    
+        st.markdown("---")
+        st.markdown("##### ⚡ Đăng Nhập Nhanh Kiểm Thử Mẫu (Demo Quick Login):")
+        d_col1, d_col2, d_col3 = st.columns(3)
+        with d_col1:
+            if st.button("🏢 GDV Hà", key="btn_quick_gdv", use_container_width=True, help="Quyền Giao dịch viên tại quầy"):
+                res = authenticate_user("gdv_ha", "Gdv@123")
+                if res.get("success"):
+                    st.session_state.authenticated_user = res.get("user")
+                    st.rerun()
+        with d_col2:
+            if st.button("📊 Manager Hùng", key="btn_quick_manager", use_container_width=True, help="Quyền Giám đốc Chi nhánh"):
+                res = authenticate_user("manager", "Manager@123")
+                if res.get("success"):
+                    st.session_state.authenticated_user = res.get("user")
+                    st.rerun()
+        with d_col3:
+            if st.button("🛡️ Admin Tuấn", key="btn_quick_admin", use_container_width=True, help="Quyền Quản trị viên hệ thống"):
+                res = authenticate_user("admin", "Admin@123")
+                if res.get("success"):
+                    st.session_state.authenticated_user = res.get("user")
+                    st.rerun()
+                    
+    st.stop()
+
+# ------------------------------------------------------------------------------
+# TRÍCH XUẤT THÔNG TIN NGƯỜI DÙNG ĐÃ ĐĂNG NHẬP
+# ------------------------------------------------------------------------------
+current_user = st.session_state.authenticated_user
+current_role = current_user.get("role", ROLE_TELLER)
+user_fullname = current_user.get("full_name", "Nhân viên")
+user_code = current_user.get("user_code", "VP0000")
+user_branch = current_user.get("branch", "Chi nhánh Hội Sở")
+role_label = ROLE_LABELS.get(current_role, "Giao Dịch Viên")
+role_badge_class = ROLE_BADGE_CLASSES.get(current_role, "badge-mass")
+
+# ==============================================================================
 # THANH HEADER TRUNG TÂM VẬN HÀNH (TOP BRAND BAR)
 # ==============================================================================
-render_html("""
+render_html(f"""
 <div class="top-brand-bar">
     <div>
         <div class="top-brand-title">
@@ -835,20 +961,17 @@ render_html("""
     </div>
     <div style="text-align: right;">
         <div style="font-size: 0.92rem; color: #FFFFFF; font-weight: 700;">
-            🏢 Chi nhánh Hội Sở
+            🏢 {user_branch}
         </div>
-        <div style="font-size: 0.82rem; color: #E2E8F0; margin-top: 4px;">
-            Giao dịch viên: <b>Nguyễn Thu Hà (VP8832)</b>
+        <div style="font-size: 0.85rem; color: #E2E8F0; margin-top: 4px;">
+            {role_label}: <b>{user_fullname} ({user_code})</b>
         </div>
     </div>
 </div>
 """)
 
 # ==============================================================================
-# SIDEBAR: BỘ LỌC KHÁCH HÀNG & TRUY VẤN HỒ SƠ
-# ==============================================================================
-# ==============================================================================
-# KHỞI TẠO SESSION STATE CHO EKYC & CHỌN KHÁCH HÀNG (PERSISTENT VIA QUERY PARAMS)
+# KHỞI TẠO SESSION STATE CHO EKYC & CHỌN KHÁCH HÀNG
 # ==============================================================================
 if "selected_cif" not in st.session_state:
     query_cif = st.query_params.get("cif", None)
@@ -865,9 +988,23 @@ if "current_ekyc_sid" not in st.session_state:
         st.session_state.current_ekyc_sid = None
 
 # ==============================================================================
-# SIDEBAR: BỘ LỌC KHÁCH HÀNG & TRUY VẤN HỒ SƠ
+# SIDEBAR: BỘ LỌC KHÁCH HÀNG & THÔNG TIN TÀI KHOẢN
 # ==============================================================================
 with st.sidebar:
+    st.markdown(f"""
+    <div class="user-sidebar-card">
+        <div style="font-size: 0.78rem; color: #94A3B8; text-transform: uppercase; font-weight: 600;">Tài Khoản Đang Đăng Nhập</div>
+        <div style="font-size: 1.1rem; font-weight: 800; color: #FFFFFF; margin-top: 2px;">{user_fullname}</div>
+        <div style="font-size: 0.82rem; color: #CBD5E1; margin-top: 2px;">Mã NV: <b>{user_code}</b> | {user_branch}</div>
+        <div style="margin-top: 6px;"><span class="{role_badge_class}">{role_label}</span></div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if st.button("🚪 Đăng Xuất Hệ Thống", key="btn_logout_sb", use_container_width=True):
+        st.session_state.authenticated_user = None
+        st.rerun()
+        
+    st.markdown("---")
     st.markdown("### Tra Cứu Khách Hàng")
     
     # Lọc theo Phân khúc
@@ -915,7 +1052,6 @@ with st.sidebar:
         if "cif" in st.query_params:
             del st.query_params["cif"]
 
-    
     st.markdown("---")
     
     # Thống kê nhanh danh mục
@@ -933,7 +1069,7 @@ with st.sidebar:
     """)
     
     st.markdown("---")
-    st.caption("Phiên bản sản phẩm SmartBanking Hub v3.5.0\nBảo mật chuẩn ISO/IEC 27001")
+    st.caption("Phiên bản sản phẩm SmartBanking Hub v3.5.0\nBảo mật chuẩn ISO/IEC 27001 (MongoDB RBAC)")
 
 # ==============================================================================
 # LOGIC TRÍCH XUẤT THÔNG TIN KHÁCH HÀNG ĐƯỢC CHỌN
@@ -947,13 +1083,28 @@ if selected_cif:
         selected_name = user_records['reviewerName'].iloc[0]
 
 # ==============================================================================
-# ĐIỀU HƯỚNG TABS SẢN PHẨM
+# ĐIỀU HƯỚNG TABS SẢN PHẨM & PHÂN QUYỀN (DYNAMIC RBAC TABS)
 # ==============================================================================
-tab1, tab2, tab3 = st.tabs([
-    "🎯 Hồ Sơ Khách Hàng 360° & Đề Xuất Bán Chéo",
-    "📈 Báo Cáo Cơ Hội Kinh Doanh Chi Nhánh",
-    "📦 Danh Mục Sản Phẩm & Biểu Phí Ưu Đãi"
-])
+tab1, tab2, tab3, tab4 = None, None, None, None
+
+if current_role == ROLE_TELLER:
+    tab1, tab3 = st.tabs([
+        "🎯 Hồ Sơ Khách Hàng 360° & Đề Xuất Bán Chéo",
+        "📦 Danh Mục Sản Phẩm & Biểu Phí Ưu Đãi"
+    ])
+elif current_role == ROLE_MANAGER:
+    tab2, tab1, tab3 = st.tabs([
+        "📈 Báo Cáo Cơ Hội Kinh Doanh Chi Nhánh",
+        "🎯 Hồ Sơ Khách Hàng 360° & Đề Xuất Bán Chéo",
+        "📦 Danh Mục Sản Phẩm & Biểu Phí Ưu Đãi"
+    ])
+else:  # ROLE_ADMIN
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "🎯 Hồ Sơ Khách Hàng 360° & Đề Xuất Bán Chéo",
+        "📈 Báo Cáo Cơ Hội Kinh Doanh Chi Nhánh",
+        "📦 Danh Mục Sản Phẩm & Biểu Phí Ưu Đãi",
+        "🛡️ Quản Lý Người Dùng & Phân Quyền Hệ Thống"
+    ])
 
 # ==============================================================================
 # TAB 1: HỒ SƠ KHÁCH HÀNG 360° & GỢI Ý NEXT-BEST-ACTION
@@ -1459,57 +1610,58 @@ with tab1:
 # ==============================================================================
 # TAB 2: BÁO CÁO CƠ HỘI KINH DOANH CHI NHÁNH
 # ==============================================================================
-with tab2:
-    st.markdown("### 📊 Báo Cáo Cơ Hội Kinh Doanh & Phân Khúc Toàn Chi Nhánh")
-    st.caption("Báo cáo số liệu thời gian thực hỗ trợ Giám đốc Chi nhánh & Trưởng phòng Dịch vụ Khách hàng:")
-    
-    col_chart1, col_chart2 = st.columns(2)
-    
-    with col_chart1:
-        st.markdown("##### 👥 Cơ Cấu Phân Khúc Khách Hàng Toàn Chi Nhánh")
-        seg_dist = purchase_history.drop_duplicates(subset=['reviewerID'])['segment'].value_counts()
-        st.bar_chart(seg_dist, color="#0A2540")
+if tab2 is not None:
+    with tab2:
+        st.markdown("### 📊 Báo Cáo Cơ Hội Kinh Doanh & Phân Khúc Toàn Chi Nhánh")
+        st.caption("Báo cáo số liệu thời gian thực hỗ trợ Giám đốc Chi nhánh & Trưởng phòng Dịch vụ Khách hàng:")
         
-    with col_chart2:
-        st.markdown("##### 🏆 Top Nhóm Sản Phẩm Có Cơ Hội Kinh Doanh Lớn Nhất")
-        # Phân bổ nhu cầu thực tế dựa trên hành vi giao dịch và gợi ý cá nhân hóa
-        top_recs_summary = []
-        for cid, group in purchase_history.groupby('reviewerID'):
-            seg = group['segment'].iloc[0]
-            top_cat = group['category'].value_counts().index[0]
-            if 'doanh nghiệp' in top_cat.lower():
-                rec_cat = 'Gói Doanh Nghiệp'
-            elif 'thẻ' in top_cat.lower() or 'thanh toán' in top_cat.lower() or 'số' in top_cat.lower():
-                rec_cat = 'Thẻ & Ngân Hàng Số'
-            elif 'tiết kiệm' in top_cat.lower() or seg == 'DIAMOND':
-                rec_cat = 'Tiết Kiệm & Đầu Tư'
-            elif 'tín dụng' in top_cat.lower():
-                rec_cat = 'Tín Dụng & Cho Vay'
-            else:
-                rec_cat = 'Bảo Hiểm & VIP'
-            top_recs_summary.append(rec_cat)
+        col_chart1, col_chart2 = st.columns(2)
+        
+        with col_chart1:
+            st.markdown("##### 👥 Cơ Cấu Phân Khúc Khách Hàng Toàn Chi Nhánh")
+            seg_dist = purchase_history.drop_duplicates(subset=['reviewerID'])['segment'].value_counts()
+            st.bar_chart(seg_dist, color="#0A2540")
             
-        rec_cat_dist = pd.Series(top_recs_summary).value_counts()
-        st.bar_chart(rec_cat_dist, color="#00B14F")
+        with col_chart2:
+            st.markdown("##### 🏆 Top Nhóm Sản Phẩm Có Cơ Hội Kinh Doanh Lớn Nhất")
+            # Phân bổ nhu cầu thực tế dựa trên hành vi giao dịch và gợi ý cá nhân hóa
+            top_recs_summary = []
+            for cid, group in purchase_history.groupby('reviewerID'):
+                seg = group['segment'].iloc[0]
+                top_cat = group['category'].value_counts().index[0]
+                if 'doanh nghiệp' in top_cat.lower():
+                    rec_cat = 'Gói Doanh Nghiệp'
+                elif 'thẻ' in top_cat.lower() or 'thanh toán' in top_cat.lower() or 'số' in top_cat.lower():
+                    rec_cat = 'Thẻ & Ngân Hàng Số'
+                elif 'tiết kiệm' in top_cat.lower() or seg == 'DIAMOND':
+                    rec_cat = 'Tiết Kiệm & Đầu Tư'
+                elif 'tín dụng' in top_cat.lower():
+                    rec_cat = 'Tín Dụng & Cho Vay'
+                else:
+                    rec_cat = 'Bảo Hiểm & VIP'
+                top_recs_summary.append(rec_cat)
+                
+            rec_cat_dist = pd.Series(top_recs_summary).value_counts()
+            st.bar_chart(rec_cat_dist, color="#00B14F")
+            
+        st.markdown("<br>", unsafe_allow_html=True)
         
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    high_potential = recommendations[recommendations['match_score'].astype(str).str.contains('95|96|97|98|99|100', regex=True)].drop_duplicates(subset=['reviewerID'])
-    if not high_potential.empty:
-        cols_hp = ['reviewerID', 'reviewerName', 'segment', 'title', 'category', 'match_score']
-        rename_hp = {
-            'reviewerID': 'Mã CIF',
-            'reviewerName': 'Họ Tên Khách Hàng',
-            'segment': 'Phân Khúc',
-            'title': 'Sản Phẩm Đề Xuất',
-            'category': 'Nhóm Sản Phẩm',
-            'match_score': 'Độ Phù Hợp'
-        }
-        render_banking_table(
-            "DANH SÁCH KHÁCH HÀNG TIỀM NĂNG CAO (MATCH SCORE ≥ 95%)",
-            high_potential[cols_hp].rename(columns=rename_hp),
-            badge_text=f"{len(high_potential)} Khách hàng mục tiêu"
-        )
+        high_potential = recommendations[recommendations['match_score'].astype(str).str.contains('95|96|97|98|99|100', regex=True)].drop_duplicates(subset=['reviewerID'])
+        if not high_potential.empty:
+            cols_hp = ['reviewerID', 'reviewerName', 'segment', 'title', 'category', 'match_score']
+            rename_hp = {
+                'reviewerID': 'Mã CIF',
+                'reviewerName': 'Họ Tên Khách Hàng',
+                'segment': 'Phân Khúc',
+                'title': 'Sản Phẩm Đề Xuất',
+                'category': 'Nhóm Sản Phẩm',
+                'match_score': 'Độ Phù Hợp'
+            }
+            render_banking_table(
+                "DANH SÁCH KHÁCH HÀNG TIỀM NĂNG CAO (MATCH SCORE ≥ 95%)",
+                high_potential[cols_hp].rename(columns=rename_hp),
+                badge_text=f"{len(high_potential)} Khách hàng mục tiêu"
+            )
 
 # ==============================================================================
 # TAB 3: DANH MỤC SẢN PHẨM & BIỂU PHÍ ƯU ĐÃI
@@ -1575,3 +1727,145 @@ with tab3:
                 cat_df[cols_rec].rename(columns=rename_rec),
                 badge_text=f"{len(cat_df)} Sản phẩm"
             )
+
+# ==============================================================================
+# TAB 4: QUẢN LÝ NGƯỜI DÙNG & PHÂN QUYỀN HỆ THỐNG (ADMIN ONLY)
+# ==============================================================================
+if tab4 is not None:
+    with tab4:
+        st.markdown("### 🛡️ Quản Lý Người Dùng & Phân Quyền Hệ Thống (RBAC Admin Panel)")
+        st.caption("Quản lý danh sách tài khoản nhân viên, phân quyền vai trò và đồng bộ trực tiếp với MongoDB Atlas:")
+        
+        all_users = get_all_users()
+        
+        # 4 thẻ Thống kê tài khoản
+        col_u1, col_u2, col_u3, col_u4 = st.columns(4)
+        with col_u1:
+            render_html(f"""
+            <div class="metric-card">
+                <div class="metric-label">Tổng Số Tài Khoản</div>
+                <div class="metric-value">{len(all_users)}</div>
+                <div class="metric-note">MongoDB Atlas Connected</div>
+            </div>
+            """)
+        with col_u2:
+            gdv_cnt = len([u for u in all_users if u.get('role') == ROLE_TELLER])
+            render_html(f"""
+            <div class="metric-card">
+                <div class="metric-label">Giao Dịch Viên (GDV)</div>
+                <div class="metric-value">{gdv_cnt}</div>
+                <div class="metric-note">Thao tác trực tiếp tại quầy</div>
+            </div>
+            """)
+        with col_u3:
+            mgr_cnt = len([u for u in all_users if u.get('role') == ROLE_MANAGER])
+            render_html(f"""
+            <div class="metric-card">
+                <div class="metric-label">Giám Đốc Chi Nhánh</div>
+                <div class="metric-value">{mgr_cnt}</div>
+                <div class="metric-note">Quyền xem báo cáo tổng hợp</div>
+            </div>
+            """)
+        with col_u4:
+            adm_cnt = len([u for u in all_users if u.get('role') == ROLE_ADMIN])
+            render_html(f"""
+            <div class="metric-card">
+                <div class="metric-label">Quản Trị Viên (Admin)</div>
+                <div class="metric-value">{adm_cnt}</div>
+                <div class="metric-note">Toàn quyền hệ thống</div>
+            </div>
+            """)
+            
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # Bảng danh sách người dùng
+        if all_users:
+            users_df = pd.DataFrame(all_users)
+            users_df["Vai Trò Bằng Tiếng Việt"] = users_df["role"].map(lambda r: ROLE_LABELS.get(r, r))
+            show_cols = ["username", "full_name", "user_code", "Vai Trò Bằng Tiếng Việt", "branch", "status", "created_at"]
+            rename_users = {
+                "username": "Tên Đăng Nhập",
+                "full_name": "Họ và Tên",
+                "user_code": "Mã NV",
+                "Vai Trò Bằng Tiếng Việt": "Vai Trò Phân Quyền",
+                "branch": "Chi Nhánh",
+                "status": "Trạng Thái",
+                "created_at": "Ngày Khởi Tạo"
+            }
+            render_banking_table(
+                "DANH SÁCH TÀI KHOẢN NHÂN VIÊN TRONG CSDL (MONGODB ATLAS)",
+                users_df[show_cols].rename(columns=rename_users),
+                badge_text=f"{len(users_df)} Tài khoản"
+            )
+            
+        st.markdown("<br>", unsafe_allow_html=True)
+        
+        # 2 Cột Thao tác Admin: Tạo mới & Quản lý vai trò/Khóa tài khoản
+        col_adm_left, col_adm_right = st.columns(2, gap="large")
+        
+        with col_adm_left:
+            st.markdown("##### ➕ Tạo Tài Khoản Nhân Viên Mới")
+            with st.form("form_create_user"):
+                new_uname = st.text_input("Tên đăng nhập (username):", placeholder="vd: gdv_phuong...")
+                new_pwd = st.text_input("Mật khẩu khởi tạo:", type="password", placeholder="Mật khẩu ít nhất 6 ký tự...")
+                new_fname = st.text_input("Họ và Tên nhân viên:", placeholder="vd: Lê Thị Phương...")
+                new_code = st.text_input("Mã nhân viên (User Code):", placeholder="vd: VP8899...")
+                new_role_sel = st.selectbox("Phân vai trò (Role):", options=[ROLE_TELLER, ROLE_MANAGER, ROLE_ADMIN], format_func=lambda x: ROLE_LABELS[x])
+                new_branch = st.text_input("Chi nhánh:", value="Chi nhánh Hội Sở")
+                
+                submit_create = st.form_submit_button("💾 Khởi Tạo & Lưu Vào MongoDB", use_container_width=True)
+                if submit_create:
+                    res_c = create_user(new_uname, new_pwd, new_fname, new_code, new_role_sel, new_branch)
+                    if res_c.get("success"):
+                        st.success(res_c.get("message"))
+                        st.toast(f"Đã tạo tài khoản {new_uname}!")
+                        time.sleep(0.5)
+                        st.rerun()
+                    else:
+                        st.error(res_c.get("message"))
+                        
+        with col_adm_right:
+            st.markdown("##### ⚙️ Quản Lý / Đổi Quyền / Khóa Tài Khoản")
+            user_list_usernames = [u.get("username") for u in all_users if u.get("username") != current_user.get("username")]
+            if user_list_usernames:
+                sel_manage_user = st.selectbox("Chọn tài khoản cần thao tác:", user_list_usernames, key="sb_manage_user")
+                target_user = next((u for u in all_users if u.get("username") == sel_manage_user), None)
+                
+                if target_user:
+                    st.info(f"👤 Tài khoản: **{target_user.get('full_name')}** ({target_user.get('username')}) | Vai trò hiện tại: **{ROLE_LABELS.get(target_user.get('role'))}** | Trạng thái: **{target_user.get('status')}**")
+                    
+                    col_m1, col_m2 = st.columns(2)
+                    with col_m1:
+                        status_btn_label = "🔒 Khóa Tài Khoản" if target_user.get("status") == "ACTIVE" else "🔓 Mở Khóa Tài Khoản"
+                        if st.button(status_btn_label, key="btn_toggle_status", use_container_width=True):
+                            res_t = toggle_user_status(sel_manage_user)
+                            if res_t.get("success"):
+                                st.success(res_t.get("message"))
+                                st.toast(res_t.get("message"))
+                                time.sleep(0.5)
+                                st.rerun()
+                                
+                    with col_m2:
+                        current_t_role = target_user.get("role")
+                        idx_role = [ROLE_TELLER, ROLE_MANAGER, ROLE_ADMIN].index(current_t_role) if current_t_role in [ROLE_TELLER, ROLE_MANAGER, ROLE_ADMIN] else 0
+                        up_role_sel = st.selectbox("Chọn vai trò mới:", options=[ROLE_TELLER, ROLE_MANAGER, ROLE_ADMIN], index=idx_role, format_func=lambda x: ROLE_LABELS[x], key="sb_up_role")
+                        if st.button("💾 Cập Nhật Vai Trò", key="btn_update_role", use_container_width=True):
+                            res_r = update_user_role(sel_manage_user, up_role_sel)
+                            if res_r.get("success"):
+                                st.success(res_r.get("message"))
+                                st.toast(res_r.get("message"))
+                                time.sleep(0.5)
+                                st.rerun()
+                                
+                    st.markdown("---")
+                    st.markdown("##### 🔑 Reset Mật Khẩu Cho Tài Khoản:")
+                    reset_pwd_val = st.text_input("Mật khẩu mới:", type="password", key="in_reset_pwd")
+                    if st.button("🔑 Đổi Mật Khẩu Ngay", key="btn_do_reset_pwd"):
+                        res_p = reset_user_password(sel_manage_user, reset_pwd_val)
+                        if res_p.get("success"):
+                            st.success(res_p.get("message"))
+                            st.toast(res_p.get("message"))
+                        else:
+                            st.error(res_p.get("message"))
+            else:
+                st.info("Chưa có tài khoản nhân viên nào khác để quản lý.")

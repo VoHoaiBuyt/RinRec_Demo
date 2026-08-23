@@ -1,0 +1,52 @@
+[
+  {
+    "username": "admin",
+    "password_hash": "pbkdf2_sha256$5205678e5fca736df8baf5b96753cd6f$43cdca4d0f005c9013adc802d27bf9ef23ad6012c3f931120d128b283409ed1c",
+    "full_name": "TS. Trần Anh Tuấn",
+    "user_code": "VP8000",
+    "role": "ADMIN",
+    "branch": "Chi nhánh Hội Sở",
+    "status": "ACTIVE",
+    "created_at": "2026-08-23 10:26:03"
+  },
+  {
+    "username": "manager",
+    "password_hash": "pbkdf2_sha256$3d1acd51aa5f7dfb900d4ab3c9932f04$6d8558c75d2bf08e58d08b0aa466b58c2710b970399c422e8e638da5a3c13381",
+    "full_name": "Phạm Quốc Hùng",
+    "user_code": "VP8001",
+    "role": "MANAGER",
+    "branch": "Chi nhánh Hội Sở",
+    "status": "ACTIVE",
+    "created_at": "2026-08-23 10:26:03"
+  },
+  {
+    "username": "gdv_ha",
+    "password_hash": "pbkdf2_sha256$ac762ad224ada4955f847179e1f9c37a$6e8d3fe7eebfc773f81a19ce15edfcb5dcf494abdef1618685c2ec780897d143",
+    "full_name": "Nguyễn Thu Hà",
+    "user_code": "VP8832",
+    "role": "GDV",
+    "branch": "Chi nhánh Hội Sở",
+    "status": "ACTIVE",
+    "created_at": "2026-08-23 10:26:03"
+  },
+  {
+    "username": "gdv_nam",
+    "password_hash": "pbkdf2_sha256$e67f2d108e2b99eb5302eb6f959e9395$887f0dcf52284df16dcb50330be201788b17d966ab2f6a9d1049a898a3a98f03",
+    "full_name": "Trần Văn Nam",
+    "user_code": "VP8845",
+    "role": "GDV",
+    "branch": "Chi nhánh Hội Sở",
+    "status": "ACTIVE",
+    "created_at": "2026-08-23 10:26:03"
+  },
+  {
+    "username": "gdv_phuong",
+    "password_hash": "pbkdf2_sha256$d598c3b1aaa2437caa529cb52cae685f$e0eb2c0152f38d9d0e3659e0a8497c6fe7a148d4e54a04c1dfd70ed435c75e94",
+    "full_name": "Lê Thị Phương",
+    "user_code": "VP8899",
+    "role": "GDV",
+    "branch": "Chi nhánh Hội Sở",
+    "status": "ACTIVE",
+    "created_at": "2026-08-23 10:28:14"
+  }
+]
