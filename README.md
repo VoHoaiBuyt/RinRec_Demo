@@ -19,26 +19,27 @@ Dự án tập trung xây dựng quy trình xử lý dữ liệu và huấn luy�
 
 * **Xử lý dữ liệu & Đồ thị Bipartite**: Chuẩn hóa dữ liệu theo chuẩn Data Warehouse 10 bảng của ngân hàng.
 * **Huấn luyện & So sánh 5 thuật toán**: Matrix Factorization (MF), Neural Collaborative Filtering (NCF), Deep MLP, LightGCN, và Financial-UltraGCN.
-* **Top-K Đề xuất Cá nhân hóa**: Đề xuất Top-5 sản phẩm tài chính kèm điểm số **Match Score (%)** và hạn mức an toàn theo phân khúc (`MASS`, `PRIME`, `DIAMOND`).
+* **Top-K Đề xuất Cá nhân hóa**: Đề xuất Top-5 sản phẩm tài chính kèm điểm số **Match Score (%)** và hạn mức an toàn theo phân khúc (MASS, PRIME, DIAMOND).
 * **Tính Khả giải (Explainable AI - XAI)**: Tự động sinh kịch bản tư vấn nghiệp vụ hiển thị trực tiếp lên màn hình giao dịch viên tại quầy.
 
 ---
 
 ## 📊 2. Nguồn Dữ Liệu Cloud (MongoDB Atlas - RinRec_DB)
 
-Toàn bộ dữ liệu được lưu trữ và truy vấn trực tiếp từ cơ sở dữ liệu đám mây **MongoDB Atlas (`RinRec_DB`)**:
-* **`DanhMucDichVu`** (78 docs): 78 dịch vụ quầy và số hóa kèm nhãn tín hiệu nghiệp vụ (`MATURITY_EVENT`, `TRAVEL_STUDY_ABROAD`, `HIGH_CASA_INFLOW`...).
-* **`DanhMucSanPham`** (25 docs): 25 sản phẩm tài chính mục tiêu (Tiết kiệm, Thẻ, Vay, Bảo hiểm, Ngoại tệ, Đầu tư).
-* **`RuleGoiY`** (20 docs): 20 luật chuyên gia tài chính với trọng số và câu giải thích lý do nghiệp vụ.
-* **`dim_customer`** (120 docs) & **`factTransaction`** (3.000 docs): 120 hồ sơ khách hàng 360° và 3.000 giao dịch thực tế.
-* **`factCustomerProduct`** (299 docs): Danh mục sản phẩm khách hàng đang sở hữu.
-* **`recommendations`** & **`purchase_history`**: Kết quả dự đoán Top-5 từ mô hình UltraGCN và lịch sử giao dịch được đồng bộ theo thời gian thực.
+Toàn bộ dữ liệu được lưu trữ và truy vấn trực tiếp từ cơ sở dữ liệu đám mây **MongoDB Atlas (RinRec_DB)**:
+* **DanhMucDichVu** (78 docs): 78 dịch vụ quầy và số hóa kèm nhãn tín hiệu nghiệp vụ (MATURITY_EVENT, TRAVEL_STUDY_ABROAD, HIGH_CASA_INFLOW...).
+* **DanhMucSanPham** (25 docs): 25 sản phẩm tài chính mục tiêu (Tiết kiệm, Thẻ, Vay, Bảo hiểm, Ngoại tệ, Đầu tư).
+* **RuleGoiY** (20 docs): 20 luật chuyên gia tài chính với trọng số và câu giải thích lý do nghiệp vụ.
+* **dim_customer** (120 docs) & **actTransaction** (3.000 docs): 120 hồ sơ khách hàng 360° và 3.000 giao dịch thực tế.
+* **actCustomerProduct** (299 docs): Danh mục sản phẩm khách hàng đang sở hữu.
+* **
+ecommendations** & **purchase_history**: Kết quả dự đoán Top-5 từ mô hình UltraGCN và lịch sử giao dịch được đồng bộ theo thời gian thực.
 
 ---
 
 ## 🔍 3. Quy Trình Xử Lý Dữ Liệu (Data Pipeline)
 
-$$\text{Data Extraction} \longrightarrow \text{Feature Engineering \& RFM} \longrightarrow \text{Bipartite Graph} \longrightarrow \text{Model Training} \longrightarrow \text{Hybrid Re-ranking} \longrightarrow \text{Streamlit Deployment}$$
+\text{Data Extraction} \longrightarrow \text{Feature Engineering \& RFM} \longrightarrow \text{Bipartite Graph} \longrightarrow \text{Model Training} \longrightarrow \text{Hybrid Re-ranking} \longrightarrow \text{Streamlit Deployment}
 
 1. **Làm sạch & Gán nhãn**: Chuẩn hóa trường tiền tệ, phân tích RFM theo thời gian.
 2. **Xây dựng Bipartite Graph**: Tạo các cạnh tương tác User - Product/Service và tính bậc node $\deg(u), \deg(i)$.
@@ -77,7 +78,16 @@ Thực nghiệm đo lường trên tập kiểm thử (Test Set 20%) với 5 ch�
 | Đặc điểm | LightGCN | UltraGCN |
 | :--- | :--- | :--- |
 | **Cơ chế lan truyền (Message Passing)** | Lan truyền đa tầng qua các lớp (Tốn kém tài nguyên) | **Bỏ qua lan truyền** (Tối ưu hóa trực tiếp trên bậc node) |
-| **Tương đồng toàn cục (Global Similarity)** | Không xét trực tiếp | **Tích hợp ma trận tương �├── core/                                # Module Lõi Xử Lý Dữ Liệu, Mô Hình AI & Phân Quyền
+| **Tương đồng toàn cục (Global Similarity)** | Không xét trực tiếp | **Tích hợp ma trận tương đồng Constraint** |
+| **Tốc độ huấn luyện** | Chậm hơn khi số nút đồ thị tăng lớn | **Nhanh hơn gấp 10-15 lần** |
+
+---
+
+## 📁 7. Cấu Trúc Thư Mục Dự Án (Project Structure)
+
+`	ext
+RinRec_Demo/
+├── core/                                # Module Lõi Xử Lý Dữ Liệu, Mô Hình AI & Phân Quyền
 │   ├── __init__.py
 │   ├── auth.py                          # Module Xác thực & Phân quyền (RBAC) MongoDB Atlas
 │   ├── mongo_connector.py               # Kết nối & truy vấn MongoDB Atlas
@@ -110,11 +120,11 @@ Thực nghiệm đo lường trên tập kiểm thử (Test Set 20%) với 5 ch�
 │
 ├── .devcontainer/                       # Cấu hình môi trường Codespaces / Dev Container
 ├── .streamlit/                          # Cấu hình giao diện Streamlit chuẩn
-├── .env                                 # Cấu hình kết nối CSDL
+├── .env                                 # Cấu hình kết nối CSDL & Tài khoản mặc định
 ├── .gitignore                           # Bộ lọc Git chuẩn hóa
 ├── requirements.txt                     # Danh sách thư viện phụ thuộc
 └── README.md                            # Tài liệu tổng quan dự án
-```
+`
 
 ---
 
@@ -122,7 +132,7 @@ Thực nghiệm đo lường trên tập kiểm thử (Test Set 20%) với 5 ch�
 
 * **Ngôn ngữ & Thư viện lõi**: Python 3.10+, PyTorch, Pandas, NumPy, Scikit-learn
 * **Cơ sở dữ liệu đám mây**: MongoDB Atlas (PyMongo, Dnspython)
-* **Xác thực & Phân quyền**: MongoDB Atlas Users Collection, PBKDF2-HMAC-SHA256 Encryption
+* **Xác thực & Phân quyền**: MongoDB Atlas Users Collection, PBKDF2-HMAC-SHA256 Encryption (.env Configuration)
 * **Trực quan hóa**: Matplotlib, Seaborn
 * **Giao diện người dùng & Demo**: Streamlit, HTML5/CSS3 Glassmorphism UI
 * **Kiến trúc mô hình**: Graph Neural Networks (Financial-UltraGCN, LightGCN), NCF, Deep MLP, MF
@@ -133,67 +143,29 @@ Thực nghiệm đo lường trên tập kiểm thử (Test Set 20%) với 5 ch�
 
 ### 1. Khởi chạy Streamlit Web App
 Chạy ứng dụng Streamlit trực tiếp từ thư mục gốc:
-```bash
+`ash
 streamlit run Product_Demo/demo_web.py
-```
-Hoặc chuyển vào thư mục `Product_Demo`:
-```bash
+`
+Hoặc chuyển vào thư mục Product_Demo:
+`ash
 cd Product_Demo
 streamlit run demo_web.py
-```
-Truy cập trình duyệt tại: **`http://localhost:8501`**
+`
+Truy cập trình duyệt tại: **http://localhost:8501**
 
-### 2. Thông tin Tài Khoản Đăng Nhập Thử Nghiệm (RBAC Login Credentials)
+### 2. Cấu Hình Tài Khoản Đăng Nhập (RBAC Login Credentials)
 
-Hệ thống tích hợp màn hình đăng nhập phân quyền lưu trữ trên MongoDB Atlas. Người dùng có thể sử dụng các tài khoản sau hoặc bấm nút **⚡ Demo Quick Login** trên giao diện:
+Hệ thống tích hợp màn hình đăng nhập phân quyền RBAC kết nối MongoDB Atlas. Tài khoản người dùng mặc định duy nhất là **Admin** và được quản lý an toàn thông qua biến môi trường trong file **.env**:
 
-| Vai Trò (Role) | Tên Đăng Nhập (Username) | Mật Khẩu (Password) | Họ và Tên Nhân Viên | Mã NV | Quyền Hạn Hạn Định |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **🏢 Giao Dịch Viên 1 (GDV1)** | `gdv_ha` | `Gdv@123` | **Nguyễn Thu Hà** | `VP8832` | Hồ Sơ 360°, eKYC Quầy/QR, Đề Xuất Bán Chéo, Danh Mục SP |
-| **🏢 Giao Dịch Viên 2 (GDV2)** | `gdv_nam` | `Gdv@123` | **Trần Văn Nam** | `VP8845` | Hồ Sơ 360°, eKYC Quầy/QR, Đề Xuất Bán Chéo, Danh Mục SP |
-| **📊 Giám Đốc Chi Nhánh** | `manager` | `Manager@123` | **Phạm Quốc Hùng** | `VP8001` | Báo Cáo Cơ Hội Kinh Doanh, Hồ Sơ 360°, Danh Mục SP |
-| **🛡️ Quản Trị Viên (Admin)** | `admin` | `Admin@123` | **TS. Trần Anh Tuấn** | `VP8000` | Toàn quyền Hệ thống + Quản Lý Người Dùng & Phân Quyền |
+* **Quản Trị Viên (Admin)**: ADMIN_USERNAME, ADMIN_PASSWORD (Toàn quyền hệ thống, cấp tài khoản và phân quyền cho nhân viên)
+
+Các tài khoản Giao dịch viên (GDV) hoặc Giám đốc chi nhánh (Manager) sẽ được tạo trực tiếp bởi Admin thông qua giao diện **Quản lý người dùng & Phân quyền** (Tab 4).
+
+Chỉnh sửa trực tiếp file .env tại thư mục gốc để thay đổi thông tin đăng nhập Admin ban đầu.
 
 ### 3. Huấn luyện lại mô hình và tái tạo file kết quả
-```bash
+`ash
 python -m core.fintech_models_comparison
-```
-Hai file `purchase_history.csv` và `recommendations.csv` trong `Product_Demo/` cùng biểu đồ `docs/images/model_comparison.png` sẽ tự động được cập nhật.─ .devcontainer/                       # Cấu hình môi trường Codespaces / Dev Container
-├── .streamlit/                          # Cấu hình giao diện Streamlit chuẩn
-├── .env                                 # Cấu hình kết nối CSDL
-├── .gitignore                           # Bộ lọc Git chuẩn hóa
-├── requirements.txt                     # Danh sách thư viện phụ thuộc
-└── README.md                            # Tài liệu tổng quan dự án
-```
-
----
-
-## 🏗️ 9. Tech Stack
-
-* **Ngôn ngữ & Thư viện lõi**: Python 3.10+, PyTorch, Pandas, NumPy, Scikit-learn
-* **Cơ sở dữ liệu đám mây**: MongoDB Atlas (PyMongo, Dnspython)
-* **Trực quan hóa**: Matplotlib, Seaborn
-* **Giao diện người dùng & Demo**: Streamlit, HTML5/CSS3 Glassmorphism UI
-* **Kiến trúc mô hình**: Graph Neural Networks (Financial-UltraGCN, LightGCN), NCF, Deep MLP, MF
-
----
-
-## ▶️ 10. Hướng Dẫn Khởi Chạy (Usage)
-
-### 1. Khởi chạy Streamlit Web App
-Chạy ứng dụng Streamlit trực tiếp từ thư mục gốc:
-```bash
-streamlit run Product_Demo/demo_web.py
-```
-Hoặc chuyển vào thư mục `Product_Demo`:
-```bash
-cd Product_Demo
-streamlit run demo_web.py
-```
-Truy cập trình duyệt tại: **`http://localhost:8501`**
-
-### 2. Huấn luyện lại mô hình và tái tạo file kết quả
-```bash
-python -m core.fintech_models_comparison
-```
-Hai file `purchase_history.csv` và `recommendations.csv` trong `Product_Demo/` cùng biểu đồ `docs/images/model_comparison.png` sẽ tự động được cập nhật.
+`
+Hai file purchase_history.csv và 
+ecommendations.csv trong Product_Demo/ cùng biểu đồ docs/images/model_comparison.png sẽ tự động được cập nhật.

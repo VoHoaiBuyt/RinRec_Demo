@@ -74,21 +74,29 @@ def verify_password(password: str, stored_password_hash: str) -> bool:
 
 def get_default_users() -> List[Dict[str, Any]]:
     """
-    Danh sách tài khoản nhân viên mặc định ban đầu (chỉ bao gồm admin)
+    Danh sách tài khoản nhân viên mặc định ban đầu (chỉ bao gồm Admin, nạp từ .env)
     """
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    
+    admin_user = os.getenv("ADMIN_USERNAME", "admin")
+    admin_pass = os.getenv("ADMIN_PASSWORD", "Admin@123")
+    admin_name = os.getenv("ADMIN_FULLNAME", "TS. Trần Anh Tuấn")
+    admin_code = os.getenv("ADMIN_USER_CODE", "VP8000")
+    admin_branch = os.getenv("ADMIN_BRANCH", "Chi nhánh Hội Sở")
+
     return [
         {
-            "username": "admin",
-            "password_hash": hash_password("Admin@123"),
-            "full_name": "VÕ HOÀI BUÝT",
-            "user_code": "VP8000",
+            "username": admin_user,
+            "password_hash": hash_password(admin_pass),
+            "full_name": admin_name,
+            "user_code": admin_code,
             "role": ROLE_ADMIN,
-            "branch": "Chi nhánh Hội Sở",
+            "branch": admin_branch,
             "status": "ACTIVE",
             "created_at": now_str
         }
     ]
+
 
 
 def _save_fallback_users(users: List[Dict[str, Any]]):
@@ -121,20 +129,23 @@ def _load_fallback_users() -> List[Dict[str, Any]]:
 
 def init_users_collection():
     """
-    Khởi tạo collection 'users' trên MongoDB Atlas nếu chưa có dữ liệu.
+    Khởi tạo / Đồng bộ các tài khoản mặc định vào collection 'users' trên MongoDB Atlas.
     """
     try:
         db = get_database()
         col = db["users"]
-        cnt = col.count_documents({})
-        if cnt == 0:
-            default_users = get_default_users()
-            col.insert_many(default_users)
-            _save_fallback_users(default_users)
-            print(f"✅ Đã khởi tạo {len(default_users)} tài khoản mặc định vào MongoDB collection 'users'.")
+        default_users = get_default_users()
+        existing_users = list(col.find({}, {"username": 1, "_id": 0}))
+        existing_unames = {u.get("username", "").lower() for u in existing_users}
+        
+        missing_users = [u for u in default_users if u.get("username", "").lower() not in existing_unames]
+        if missing_users:
+            col.insert_many([dict(u) for u in missing_users])
+            print(f"✅ Đã bổ sung {len(missing_users)} tài khoản mặc định vào MongoDB collection 'users'.")
     except Exception as e:
         print(f"⚠️ MongoDB Atlas không khả dụng ({e}), sử dụng fallback local JSON.")
         _load_fallback_users()
+
 
 
 def get_all_users() -> List[Dict[str, Any]]:

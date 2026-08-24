@@ -910,26 +910,7 @@ if st.session_state.authenticated_user is None:
                     st.rerun()
                 else:
                     st.error(res.get("message"))
-                    
-        st.markdown("---")
-        st.markdown("##### ⚡ Đăng Nhập Nhanh Kiểm Thử Mẫu (Demo Quick Login):")
-        all_sys_users = get_all_users()
-        active_usernames = [u.get("username") for u in all_sys_users if u.get("status") == "ACTIVE"]
-        
-        d_cols = st.columns(max(1, min(len(active_usernames), 4)))
-        for idx, u_info in enumerate(all_sys_users):
-            if u_info.get("status") != "ACTIVE":
-                continue
-            u_name = u_info.get("username")
-            u_role = u_info.get("role")
-            role_icon = "🛡️" if u_role == ROLE_ADMIN else ("📊" if u_role == ROLE_MANAGER else "🏢")
-            btn_title = f"{role_icon} {u_info.get('full_name', u_name)}"
-            
-            with d_cols[idx % len(d_cols)]:
-                if st.button(btn_title, key=f"btn_quick_{u_name}", use_container_width=True, help=f"Đăng nhập với tài khoản {u_name} [{u_role}]"):
-                    st.session_state.authenticated_user = {k: v for k, v in u_info.items() if k != "password_hash"}
-                    st.rerun()
-                    
+
     st.stop()
 
 # ------------------------------------------------------------------------------
