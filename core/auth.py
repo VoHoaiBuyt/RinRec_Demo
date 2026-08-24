@@ -74,46 +74,16 @@ def verify_password(password: str, stored_password_hash: str) -> bool:
 
 def get_default_users() -> List[Dict[str, Any]]:
     """
-    Danh sách tài khoản nhân viên mặc định ban đầu
+    Danh sách tài khoản nhân viên mặc định ban đầu (chỉ bao gồm admin)
     """
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return [
         {
             "username": "admin",
             "password_hash": hash_password("Admin@123"),
-            "full_name": "TS. Trần Anh Tuấn",
+            "full_name": "VÕ HOÀI BUÝT",
             "user_code": "VP8000",
             "role": ROLE_ADMIN,
-            "branch": "Chi nhánh Hội Sở",
-            "status": "ACTIVE",
-            "created_at": now_str
-        },
-        {
-            "username": "manager",
-            "password_hash": hash_password("Manager@123"),
-            "full_name": "Phạm Quốc Hùng",
-            "user_code": "VP8001",
-            "role": ROLE_MANAGER,
-            "branch": "Chi nhánh Hội Sở",
-            "status": "ACTIVE",
-            "created_at": now_str
-        },
-        {
-            "username": "gdv_ha",
-            "password_hash": hash_password("Gdv@123"),
-            "full_name": "Nguyễn Thu Hà",
-            "user_code": "VP8832",
-            "role": ROLE_TELLER,
-            "branch": "Chi nhánh Hội Sở",
-            "status": "ACTIVE",
-            "created_at": now_str
-        },
-        {
-            "username": "gdv_nam",
-            "password_hash": hash_password("Gdv@123"),
-            "full_name": "Trần Văn Nam",
-            "user_code": "VP8845",
-            "role": ROLE_TELLER,
             "branch": "Chi nhánh Hội Sở",
             "status": "ACTIVE",
             "created_at": now_str

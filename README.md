@@ -77,30 +77,9 @@ Thực nghiệm đo lường trên tập kiểm thử (Test Set 20%) với 5 ch�
 | Đặc điểm | LightGCN | UltraGCN |
 | :--- | :--- | :--- |
 | **Cơ chế lan truyền (Message Passing)** | Lan truyền đa tầng qua các lớp (Tốn kém tài nguyên) | **Bỏ qua lan truyền** (Tối ưu hóa trực tiếp trên bậc node) |
-| **Tương đồng toàn cục (Global Similarity)** | Không xét trực tiếp | **Tích hợp ma trận tương đồng Item-Item** |
-| **Tốc độ huấn luyện (Efficiency)** | Chậm hơn khi đồ thị lớn | **Nhanh gấp 5-10 lần**, chi phí bộ nhớ thấp |
-| **Khả năng ứng dụng thực tế** | Phức tạp khi scale hệ thống lớn | **Dễ dàng triển khai thực tế & Real-time Inference** |
-
----
-
-## 🚀 7. Tính Năng Của Ứng Dụng (Features)
-
-* **Chọn khách hàng mẫu**: Chọn khách hàng từ dropdown để xem hồ sơ và phân khúc (`MASS`, `PRIME`, `DIAMOND`).
-* **Lịch sử giao dịch quầy & digital**: Hiển thị bảng chi tiết các dịch vụ khách hàng đã sử dụng.
-* **Top 5 Đề xuất Cá nhân hóa UltraGCN**:
-  * Tên sản phẩm, nhóm sản phẩm (Tiết kiệm, Thẻ, Vay, Bảo hiểm...).
-  * Hạn mức tối thiểu, biểu phí / lãi suất.
-  * Điểm tương đồng **Match Score (%)**.
-  * **Kịch bản tư vấn GDV**: Lời thoại gợi ý giúp giao dịch viên chốt hợp đồng ngay tại quầy.
-
----
-
-## 📁 8. Cấu Trúc Dự Án (Project Structure)
-
-```
-RinRec_Demo/
-├── core/                                # Module Lõi Xử Lý Dữ Liệu & Mô Hình AI
+| **Tương đồng toàn cục (Global Similarity)** | Không xét trực tiếp | **Tích hợp ma trận tương �├── core/                                # Module Lõi Xử Lý Dữ Liệu, Mô Hình AI & Phân Quyền
 │   ├── __init__.py
+│   ├── auth.py                          # Module Xác thực & Phân quyền (RBAC) MongoDB Atlas
 │   ├── mongo_connector.py               # Kết nối & truy vấn MongoDB Atlas
 │   ├── fintech_data_pipeline.py         # Pipeline tiền xử lý & tạo đồ thị Bipartite
 │   └── fintech_models_comparison.py     # Huấn luyện & Đánh giá 5 mô hình ML/GCN
@@ -121,16 +100,65 @@ RinRec_Demo/
 │   └── index.html
 │
 ├── Product_Demo/                        # Giao diện Web Demo Streamlit (SmartAdvisor)
-│   ├── demo_web.py                      # Ứng dụng Streamlit chính
+│   ├── demo_web.py                      # Ứng dụng Streamlit chính (RBAC Login & Dynamic Tabs)
 │   ├── purchase_history.csv             # Fallback dataset lịch sử GD
 │   └── recommendations.csv              # Fallback dataset kết quả UltraGCN
 │
 ├── docs/                                # Tài liệu hướng dẫn & hình ảnh
-│   ├── Tich_Hop_Nhan_Dien_Khuon_mat.md
 │   └── images/
 │       └── model_comparison.png
 │
 ├── .devcontainer/                       # Cấu hình môi trường Codespaces / Dev Container
+├── .streamlit/                          # Cấu hình giao diện Streamlit chuẩn
+├── .env                                 # Cấu hình kết nối CSDL
+├── .gitignore                           # Bộ lọc Git chuẩn hóa
+├── requirements.txt                     # Danh sách thư viện phụ thuộc
+└── README.md                            # Tài liệu tổng quan dự án
+```
+
+---
+
+## 🏗️ 9. Tech Stack
+
+* **Ngôn ngữ & Thư viện lõi**: Python 3.10+, PyTorch, Pandas, NumPy, Scikit-learn
+* **Cơ sở dữ liệu đám mây**: MongoDB Atlas (PyMongo, Dnspython)
+* **Xác thực & Phân quyền**: MongoDB Atlas Users Collection, PBKDF2-HMAC-SHA256 Encryption
+* **Trực quan hóa**: Matplotlib, Seaborn
+* **Giao diện người dùng & Demo**: Streamlit, HTML5/CSS3 Glassmorphism UI
+* **Kiến trúc mô hình**: Graph Neural Networks (Financial-UltraGCN, LightGCN), NCF, Deep MLP, MF
+
+---
+
+## ▶️ 10. Hướng Dẫn Khởi Chạy (Usage)
+
+### 1. Khởi chạy Streamlit Web App
+Chạy ứng dụng Streamlit trực tiếp từ thư mục gốc:
+```bash
+streamlit run Product_Demo/demo_web.py
+```
+Hoặc chuyển vào thư mục `Product_Demo`:
+```bash
+cd Product_Demo
+streamlit run demo_web.py
+```
+Truy cập trình duyệt tại: **`http://localhost:8501`**
+
+### 2. Thông tin Tài Khoản Đăng Nhập Thử Nghiệm (RBAC Login Credentials)
+
+Hệ thống tích hợp màn hình đăng nhập phân quyền lưu trữ trên MongoDB Atlas. Người dùng có thể sử dụng các tài khoản sau hoặc bấm nút **⚡ Demo Quick Login** trên giao diện:
+
+| Vai Trò (Role) | Tên Đăng Nhập (Username) | Mật Khẩu (Password) | Họ và Tên Nhân Viên | Mã NV | Quyền Hạn Hạn Định |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **🏢 Giao Dịch Viên 1 (GDV1)** | `gdv_ha` | `Gdv@123` | **Nguyễn Thu Hà** | `VP8832` | Hồ Sơ 360°, eKYC Quầy/QR, Đề Xuất Bán Chéo, Danh Mục SP |
+| **🏢 Giao Dịch Viên 2 (GDV2)** | `gdv_nam` | `Gdv@123` | **Trần Văn Nam** | `VP8845` | Hồ Sơ 360°, eKYC Quầy/QR, Đề Xuất Bán Chéo, Danh Mục SP |
+| **📊 Giám Đốc Chi Nhánh** | `manager` | `Manager@123` | **Phạm Quốc Hùng** | `VP8001` | Báo Cáo Cơ Hội Kinh Doanh, Hồ Sơ 360°, Danh Mục SP |
+| **🛡️ Quản Trị Viên (Admin)** | `admin` | `Admin@123` | **TS. Trần Anh Tuấn** | `VP8000` | Toàn quyền Hệ thống + Quản Lý Người Dùng & Phân Quyền |
+
+### 3. Huấn luyện lại mô hình và tái tạo file kết quả
+```bash
+python -m core.fintech_models_comparison
+```
+Hai file `purchase_history.csv` và `recommendations.csv` trong `Product_Demo/` cùng biểu đồ `docs/images/model_comparison.png` sẽ tự động được cập nhật.─ .devcontainer/                       # Cấu hình môi trường Codespaces / Dev Container
 ├── .streamlit/                          # Cấu hình giao diện Streamlit chuẩn
 ├── .env                                 # Cấu hình kết nối CSDL
 ├── .gitignore                           # Bộ lọc Git chuẩn hóa

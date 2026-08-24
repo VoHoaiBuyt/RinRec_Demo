@@ -913,24 +913,21 @@ if st.session_state.authenticated_user is None:
                     
         st.markdown("---")
         st.markdown("##### ⚡ Đăng Nhập Nhanh Kiểm Thử Mẫu (Demo Quick Login):")
-        d_col1, d_col2, d_col3 = st.columns(3)
-        with d_col1:
-            if st.button("🏢 GDV Hà", key="btn_quick_gdv", use_container_width=True, help="Quyền Giao dịch viên tại quầy"):
-                res = authenticate_user("gdv_ha", "Gdv@123")
-                if res.get("success"):
-                    st.session_state.authenticated_user = res.get("user")
-                    st.rerun()
-        with d_col2:
-            if st.button("📊 Manager Hùng", key="btn_quick_manager", use_container_width=True, help="Quyền Giám đốc Chi nhánh"):
-                res = authenticate_user("manager", "Manager@123")
-                if res.get("success"):
-                    st.session_state.authenticated_user = res.get("user")
-                    st.rerun()
-        with d_col3:
-            if st.button("🛡️ Admin Tuấn", key="btn_quick_admin", use_container_width=True, help="Quyền Quản trị viên hệ thống"):
-                res = authenticate_user("admin", "Admin@123")
-                if res.get("success"):
-                    st.session_state.authenticated_user = res.get("user")
+        all_sys_users = get_all_users()
+        active_usernames = [u.get("username") for u in all_sys_users if u.get("status") == "ACTIVE"]
+        
+        d_cols = st.columns(max(1, min(len(active_usernames), 4)))
+        for idx, u_info in enumerate(all_sys_users):
+            if u_info.get("status") != "ACTIVE":
+                continue
+            u_name = u_info.get("username")
+            u_role = u_info.get("role")
+            role_icon = "🛡️" if u_role == ROLE_ADMIN else ("📊" if u_role == ROLE_MANAGER else "🏢")
+            btn_title = f"{role_icon} {u_info.get('full_name', u_name)}"
+            
+            with d_cols[idx % len(d_cols)]:
+                if st.button(btn_title, key=f"btn_quick_{u_name}", use_container_width=True, help=f"Đăng nhập với tài khoản {u_name} [{u_role}]"):
+                    st.session_state.authenticated_user = {k: v for k, v in u_info.items() if k != "password_hash"}
                     st.rerun()
                     
     st.stop()
@@ -1804,13 +1801,14 @@ if tab4 is not None:
         col_adm_left, col_adm_right = st.columns(2, gap="large")
         
         with col_adm_left:
-            st.markdown("##### ➕ Tạo Tài Khoản Nhân Viên Mới")
+            st.markdown("##### ➕ Tạo Tài Khoản Nhân Viên Mới (GDV / Manager)")
+            st.caption("Admin có quyền cấp tài khoản mới với vai trò **Giám Đốc Chi Nhánh (Manager)** hoặc **Giao Dịch Viên (GDV)**:")
             with st.form("form_create_user"):
-                new_uname = st.text_input("Tên đăng nhập (username):", placeholder="vd: gdv_phuong...")
+                new_uname = st.text_input("Tên đăng nhập (username):", placeholder="vd: gdv_phuong, manager_hung...")
                 new_pwd = st.text_input("Mật khẩu khởi tạo:", type="password", placeholder="Mật khẩu ít nhất 6 ký tự...")
                 new_fname = st.text_input("Họ và Tên nhân viên:", placeholder="vd: Lê Thị Phương...")
                 new_code = st.text_input("Mã nhân viên (User Code):", placeholder="vd: VP8899...")
-                new_role_sel = st.selectbox("Phân vai trò (Role):", options=[ROLE_TELLER, ROLE_MANAGER, ROLE_ADMIN], format_func=lambda x: ROLE_LABELS[x])
+                new_role_sel = st.selectbox("Phân vai trò (Role):", options=[ROLE_TELLER, ROLE_MANAGER, ROLE_ADMIN], format_func=lambda x: ROLE_LABELS[x], help="Chọn vai trò GDV (Giao dịch viên), Manager (Giám đốc chi nhánh) hoặc Admin")
                 new_branch = st.text_input("Chi nhánh:", value="Chi nhánh Hội Sở")
                 
                 submit_create = st.form_submit_button("💾 Khởi Tạo & Lưu Vào MongoDB", use_container_width=True)
