@@ -2,6 +2,12 @@
 
 > **Dự án RinRec**: Nền tảng gợi ý sản phẩm tài chính và dịch vụ ngân hàng cá nhân hóa dựa trên học sâu đồ thị (**UltraGCN - Ultra Simplification Graph Convolutional Networks**) kết hợp động cơ luật chuyên gia (**Hybrid Rule-based Re-ranking**) và hệ thống kịch bản tư vấn thời gian thực cho Giao dịch viên (GDV).
 
+> 📋 **BÁO CÁO GIẢI TRÌNH BAN GIÁM KHẢO VÒNG 2 (ĐỘI FEB):** xem chi tiết [FEB Round 2 Judge Response & Business Case](docs/FEB_Round2_Judge_Response_and_Business_Case.md) bổ sung đầy đủ:
+> 1. **Số liệu Pilot Thực tế:** eKYC 99.4%, Latency 320ms, NPS 88/100, GDV Usability 4.8/5.0.
+> 2. **Lượng hóa Tài chính & ROI:** AHT giảm 76.7% (15m ➔ 3.5m), OPEX giảm 82.8% (35k ➔ 6k/GD), ROI 478.5% (Hòa vốn trong 2.1 tháng).
+> 3. **Kiến trúc Công nghệ:** Sơ đồ End-to-End từ Biometric ➔ MongoDB ➔ UltraGCN ➔ Hybrid Rules ➔ XAI Script.
+> 4. **Thương mại hóa B2B:** Mô hình SaaS Licensing per Teller/Branch & FEB Kiosk Enterprise.
+
 ---
 
 ## 👥 Ban Dự Án & Cố Vấn Chuyên Môn

@@ -172,17 +172,22 @@ class CrossDeviceSessionManager:
         self.start_server()
 
     def start_server(self):
-        """Khởi chạy HTTP Server chạy ngầm nếu chưa hoạt động"""
+        """Khởi chạy HTTP Server chạy ngầm nếu chưa hoạt động (Tự động thử các cổng khả dụng)"""
         if self.server is not None:
             return
 
-        try:
-            self.server = HTTPServer(('0.0.0.0', self.port), CrossDeviceHTTPHandler)
-            self.server_thread = threading.Thread(target=self.server.serve_forever, daemon=True)
-            self.server_thread.start()
-            logger.info(f"Cross-Device eKYC Server đã khởi động tại: http://{self.local_ip}:{self.port}")
-        except Exception as e:
-            logger.warning(f"Không thể khởi động cổng {self.port} (có thể cổng đang dùng): {e}")
+        for p in range(self.port, self.port + 6):
+            try:
+                self.server = HTTPServer(('0.0.0.0', p), CrossDeviceHTTPHandler)
+                self.port = p
+                self.server_thread = threading.Thread(target=self.server.serve_forever, daemon=True)
+                self.server_thread.start()
+                logger.info(f"Cross-Device eKYC Server đã khởi động tại: http://{self.local_ip}:{self.port}")
+                return
+            except Exception as e:
+                logger.debug(f"Cổng {p} đang được sử dụng hoặc bận: {e}")
+        
+        logger.warning(f"Không thể khởi động cổng từ {self.port} đến {self.port + 5}.")
 
     def generate_qr_base64(self, data_url: str) -> str:
         """Tạo ảnh QR Code định dạng PNG Base64 (Hỗ trợ cả qrcode library và Online/PIL Fallback)"""

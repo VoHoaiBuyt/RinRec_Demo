@@ -31,6 +31,16 @@ for env_path in [
         except Exception:
             pass
 
+# Nạp cấu hình từ Streamlit Cloud Secrets nếu có
+try:
+    import streamlit as _st
+    if hasattr(_st, "secrets"):
+        for _k in ["MONGO_USER", "MONGO_PASS", "MONGO_HOST", "MONGO_DB_NAME", "MONGO_URI"]:
+            if _k in _st.secrets and _k not in os.environ:
+                os.environ[_k] = str(_st.secrets[_k])
+except Exception:
+    pass
+
 # Cấu hình kết nối MongoDB Atlas
 MONGO_USER = os.getenv("MONGO_USER", "rinrec_ad")
 MONGO_PASS = os.getenv("MONGO_PASS", "Hoaibuyt05@")

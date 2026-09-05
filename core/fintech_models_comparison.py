@@ -56,7 +56,7 @@ try:
 except ImportError:
     from mongo_connector import get_collection_df, save_df_to_collection
 
-print("📡 Đang tải dữ liệu từ MongoDB Atlas (RinRec_DB)...")
+print("📡 Đang tải dữ liệu từ MongoDB Atlas (RinRec_DB)...", flush=True)
 df_customers = get_collection_df("dim_customer")
 df_products = get_collection_df("DanhMucSanPham")
 df_services = get_collection_df("DanhMucDichVu")
@@ -67,7 +67,7 @@ df_rules = get_collection_df("RuleGoiY")
 if df_customers.empty or df_transactions.empty:
     raise RuntimeError("❌ Không thể nạp dữ liệu từ MongoDB Atlas! Vui lòng kiểm tra kết nối mạng và tài khoản Atlas trong mongo_connector.py.")
 
-print(f"✅ Đã nạp thành công từ MongoDB Atlas: {len(df_customers)} KH | {len(df_products)} SP | {len(df_services)} DV | {len(df_transactions)} GD | {len(df_holdings)} Sở hữu")
+print(f"✅ Đã nạp thành công từ MongoDB Atlas: {len(df_customers)} KH | {len(df_products)} SP | {len(df_services)} DV | {len(df_transactions)} GD | {len(df_holdings)} Sở hữu", flush=True)
 
 # Lấy danh sách mã sản phẩm hợp lệ từ CSDL MongoDB (DanhMucSanPham)
 valid_sp_ids = set(df_products["Ma_SP"].dropna().unique()) if "Ma_SP" in df_products.columns else set()
