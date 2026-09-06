@@ -3,13 +3,30 @@ headless = true
 enableCORS = false
 enableXsrfProtection = false
 port = 8501
+# Tắt file watcher trong Docker để tránh inotify limit
+# fileWatcherType = "none"
 
 [theme]
-primaryColor = "#00D4B2"
-backgroundColor = "#070E1B"
+primaryColor      = "#00D4B2"
+backgroundColor   = "#070E1B"
 secondaryBackgroundColor = "#0F1E36"
-textColor = "#E2E8F0"
-font = "sans serif"
+textColor         = "#E2E8F0"
+font              = "sans serif"
 
 [browser]
 gatherUsageStats = false
+# serverAddress và serverPort chỉ dùng khi public URL khác localhost
+# serverAddress = "localhost"
+# serverPort = 8501
+
+[runner]
+# Tăng hiệu năng: tắt magic commands không dùng
+magicEnabled = false
+# fastReruns giúp UI phản hồi nhanh hơn trên mobile (giảm re-render delay)
+fastReruns = true
+
+[client]
+# Giảm tải cho mobile: tắt toolbar default
+toolbarMode = "minimal"
+# Hiển thị đúng Unicode (tiếng Việt)
+showErrorDetails = false

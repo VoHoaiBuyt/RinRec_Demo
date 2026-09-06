@@ -49,12 +49,14 @@ def create_app():
         from backend.app.api.routes.transactions import router as transactions_router
         from backend.app.api.routes.products import router as products_router
         from backend.app.api.routes.consultations import router as consultations_router
+        from backend.app.api.routes.recommendations import router as recommendations_router
 
-        app.include_router(auth_router,         prefix=f"{API_PREFIX}/auth",          tags=["Authentication"])
-        app.include_router(customers_router,    prefix=f"{API_PREFIX}/customers",    tags=["Customers"])
-        app.include_router(transactions_router, prefix=f"{API_PREFIX}/transactions", tags=["Transactions"])
-        app.include_router(products_router,     prefix=f"{API_PREFIX}/products",     tags=["Products"])
-        app.include_router(consultations_router,prefix=f"{API_PREFIX}/consultations",tags=["Consultations"])
+        app.include_router(auth_router,            prefix=f"{API_PREFIX}/auth",            tags=["Authentication"])
+        app.include_router(customers_router,       prefix=f"{API_PREFIX}/customers",       tags=["Customers"])
+        app.include_router(transactions_router,    prefix=f"{API_PREFIX}/transactions",    tags=["Transactions"])
+        app.include_router(products_router,        prefix=f"{API_PREFIX}/products",        tags=["Products"])
+        app.include_router(consultations_router,   prefix=f"{API_PREFIX}/consultations",   tags=["Consultations"])
+        app.include_router(recommendations_router, prefix=f"{API_PREFIX}/recommendations", tags=["Recommendations"])
     except ImportError as e:
         print(f"⚠️ Route import error (will be registered later): {e}")
 

@@ -1,0 +1,20 @@
+[
+  {
+    "consultation_id": "CONSULT_0001",
+    "cif": "CUST_0001",
+    "teller_id": "teller01",
+    "recommended_products": ["PROD_002", "PROD_003"],
+    "consultation_date": "2024-09-01T09:00:00Z",
+    "result": "PENDING",
+    "notes": "Khách hàng quan tâm đến vay tiêu dùng"
+  },
+  {
+    "consultation_id": "CONSULT_0002",
+    "cif": "CUST_0002",
+    "teller_id": "teller01",
+    "recommended_products": ["PROD_004"],
+    "consultation_date": "2024-09-03T11:30:00Z",
+    "result": "ACCEPTED",
+    "notes": "Khách hàng đồng ý mua bảo hiểm"
+  }
+]

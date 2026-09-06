@@ -35,6 +35,31 @@ except ImportError:
     except ImportError:
         render_auth_screen = None
 
+try:
+    from frontend.app.components.responsive_utils import (
+        inject_viewport_meta, inject_screen_size_detector,
+        inject_card_grid_css, responsive_columns,
+        render_responsive_image, scrollable_table_wrapper,
+        metric_row, get_screen_size_hint,
+    )
+except ImportError:
+    try:
+        from app.components.responsive_utils import (
+            inject_viewport_meta, inject_screen_size_detector,
+            inject_card_grid_css, responsive_columns,
+            render_responsive_image, scrollable_table_wrapper,
+            metric_row, get_screen_size_hint,
+        )
+    except ImportError:
+        inject_viewport_meta = None
+        inject_screen_size_detector = None
+        inject_card_grid_css = None
+        responsive_columns = None
+        render_responsive_image = None
+        scrollable_table_wrapper = None
+        metric_row = None
+        get_screen_size_hint = lambda: "desktop"
+
 
 # ==============================================================================
 # CẤU HÌNH TRANG WEB & THEME GIAO DIỆN CHUẨN DOANH NGHIỆP (ENTERPRISE BANKING)
@@ -44,6 +69,12 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# Inject viewport meta + screen-size detector (responsive mobile support)
+if inject_viewport_meta:
+    inject_viewport_meta()
+if inject_screen_size_detector:
+    inject_screen_size_detector()
 
 # Custom CSS giao diện ngân hàng cao cấp
 st.markdown("""<style>
@@ -745,6 +776,436 @@ html, body, [class*="css"] {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+</style>""", unsafe_allow_html=True)
+
+# ==============================================================================
+# RESPONSIVE CSS — Media Queries cho mọi kích thước màn hình
+# Desktop (>1024px) → Tablet ngang (≤1024px) → Tablet dọc (≤768px) → Mobile (≤480px)
+# ==============================================================================
+st.markdown("""<style>
+/* ── BASE: đảm bảo mọi ảnh & iframe tự co giãn ─────────────────────────────── */
+img, iframe, video {
+    max-width: 100% !important;
+    height: auto !important;
+}
+
+/* ── DataFrames: thanh cuộn ngang khi màn hình hẹp ─────────────────────────── */
+[data-testid="stDataFrame"], .stDataFrame, .dataframe-container {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ── Streamlit block container: padding responsive ──────────────────────────── */
+.block-container {
+    padding-left: clamp(0.5rem, 2vw, 2rem) !important;
+    padding-right: clamp(0.5rem, 2vw, 2rem) !important;
+    padding-top: clamp(0.5rem, 1.5vw, 1.5rem) !important;
+    max-width: 100% !important;
+}
+
+/* ── Top Brand Bar ───────────────────────────────────────────────────────────── */
+.top-brand-bar {
+    padding: clamp(0.7rem, 1.5vw, 1.2rem) clamp(0.8rem, 2vw, 1.8rem);
+    gap: 0.8rem;
+}
+.top-brand-title {
+    font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+}
+.top-brand-sub {
+    font-size: clamp(0.78rem, 1.5vw, 0.95rem);
+}
+
+/* ── Metric Cards ────────────────────────────────────────────────────────────── */
+.metric-card {
+    padding: clamp(0.7rem, 1.5vw, 1.2rem);
+}
+.metric-value {
+    font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+}
+.metric-label {
+    font-size: clamp(0.7rem, 1.2vw, 0.82rem);
+}
+
+/* ── NBA / Recommendation Cards ─────────────────────────────────────────────── */
+.nba-card {
+    padding: clamp(0.8rem, 1.5vw, 1.2rem) clamp(0.9rem, 1.8vw, 1.4rem);
+}
+.nba-title {
+    font-size: clamp(0.95rem, 1.8vw, 1.15rem);
+}
+.nba-details {
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    font-size: clamp(0.78rem, 1.3vw, 0.86rem);
+}
+.nba-script {
+    font-size: clamp(0.78rem, 1.3vw, 0.88rem);
+    padding: clamp(0.5rem, 1vw, 0.7rem) clamp(0.6rem, 1.2vw, 0.9rem);
+}
+
+/* ── Customer Profile & Cards ───────────────────────────────────────────────── */
+.cust-profile-card {
+    padding: clamp(0.8rem, 1.5vw, 1.4rem) clamp(0.9rem, 1.8vw, 1.6rem);
+}
+.cust-card-box {
+    padding: clamp(0.7rem, 1.3vw, 1.1rem) clamp(0.8rem, 1.5vw, 1.2rem);
+}
+.cust-card-name {
+    font-size: clamp(0.88rem, 1.5vw, 1rem);
+}
+
+/* ── eKYC Box ────────────────────────────────────────────────────────────────── */
+.ekyc-card-box {
+    padding: clamp(0.8rem, 1.5vw, 1.4rem) clamp(0.9rem, 1.8vw, 1.6rem);
+}
+.ekyc-qr-container img {
+    max-width: 220px;
+    width: 100%;
+}
+
+/* ── Banking Table ───────────────────────────────────────────────────────────── */
+.banking-panel {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.banking-table {
+    font-size: clamp(0.76rem, 1.2vw, 0.88rem);
+    min-width: 480px;
+}
+.banking-table th,
+.banking-table td {
+    padding: clamp(0.45rem, 0.8vw, 0.75rem) clamp(0.6rem, 1vw, 1rem);
+    white-space: nowrap;
+}
+
+/* ── Glassmorphism Login Form ────────────────────────────────────────────────── */
+.glass-login-wrapper {
+    max-width: min(500px, 96vw);
+    margin: 1rem auto;
+}
+.glass-login-card {
+    padding: clamp(1.5rem, 3vw, 2.4rem) clamp(1.4rem, 2.5vw, 2.6rem);
+    border-radius: clamp(16px, 2.5vw, 24px);
+}
+
+/* ── Buttons: touch-friendly minimum tap target ─────────────────────────────── */
+button, .stButton > button, [data-testid="stFormSubmitButton"] button {
+    min-height: 44px !important;
+    min-width: 44px !important;
+    font-size: clamp(0.85rem, 1.4vw, 1rem) !important;
+}
+
+/* ── Text Inputs: touch-friendly ───────────────────────────────────────────── */
+input[type="text"], input[type="password"], input[type="email"],
+.stTextInput input, .stSelectbox select {
+    min-height: 44px !important;
+    font-size: clamp(0.85rem, 1.4vw, 0.95rem) !important;
+}
+
+/* ── Signal Pills ───────────────────────────────────────────────────────────── */
+.signal-pill {
+    font-size: clamp(0.72rem, 1.1vw, 0.82rem);
+    padding: 0.25rem clamp(0.5rem, 1vw, 0.75rem);
+}
+
+/* ── User Sidebar Card ───────────────────────────────────────────────────────── */
+.user-sidebar-card {
+    padding: clamp(0.6rem, 1.2vw, 1rem);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   TABLET NGANG — max-width: 1024px
+   ════════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 1024px) {
+    .block-container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+
+    .top-brand-title { font-size: 1.35rem; }
+    .top-brand-sub   { font-size: 0.85rem; }
+    .top-brand-bar   { padding: 0.9rem 1.2rem; }
+
+    .nba-details {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+
+    .metric-value { font-size: 1.3rem; }
+
+    .banking-table { font-size: 0.82rem; }
+
+    .glass-login-wrapper { max-width: 92vw; }
+
+    /* Hình ảnh trong eKYC không quá to */
+    .ekyc-qr-container img { max-width: 180px; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   TABLET DỌC — max-width: 768px
+   ════════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .block-container {
+        padding-left: 0.6rem !important;
+        padding-right: 0.6rem !important;
+        padding-top: 0.5rem !important;
+    }
+
+    /* Brand bar: stack vertically */
+    .top-brand-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+        padding: 0.8rem 1rem;
+        border-radius: 10px;
+    }
+    .top-brand-title { font-size: 1.2rem; }
+    .top-brand-sub   { font-size: 0.8rem; display: none; }
+
+    /* Metric cards: thêm khoảng cách */
+    .metric-card { padding: 0.7rem; }
+    .metric-value { font-size: 1.2rem; }
+    .metric-label { font-size: 0.72rem; }
+    .metric-note  { font-size: 0.72rem; }
+
+    /* NBA cards */
+    .nba-card { padding: 0.8rem 0.9rem; border-left-width: 4px; }
+    .nba-title { font-size: 1rem; }
+    .nba-details {
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        font-size: 0.8rem;
+    }
+    .nba-script { font-size: 0.8rem; }
+    .nba-header { flex-direction: column; gap: 0.3rem; }
+
+    /* Customer cards: 1 cột */
+    .cust-card-box {
+        padding: 0.8rem;
+        border-radius: 10px;
+    }
+
+    /* Banking table */
+    .banking-panel-header { font-size: 0.85rem; padding: 0.6rem 0.9rem; }
+    .banking-table { font-size: 0.78rem; }
+    .banking-table th, .banking-table td { padding: 0.5rem 0.7rem; }
+
+    /* eKYC */
+    .ekyc-card-box { padding: 0.8rem 1rem; }
+    .ekyc-qr-container img { max-width: 160px; }
+
+    /* Glassmorphism login */
+    .glass-login-wrapper { max-width: 98vw; margin: 0.5rem auto; }
+    .glass-login-card {
+        padding: 1.4rem 1.2rem;
+        border-radius: 18px;
+    }
+    .glass-login-title { font-size: 1.5rem; }
+
+    /* Signal pills: compact */
+    .signal-pill { font-size: 0.72rem; padding: 0.2rem 0.55rem; margin-bottom: 4px; }
+
+    /* Profile card */
+    .cust-profile-card { padding: 0.9rem 1rem; }
+
+    /* User sidebar card */
+    .user-sidebar-card { padding: 0.6rem 0.8rem; }
+    .user-sidebar-card div[style*="font-size: 1.1rem"] {
+        font-size: 0.95rem !important;
+    }
+
+    /* Ảnh chân dung khách hàng */
+    .cust-face-portrait { width: 80px; height: 96px; }
+
+    /* Buttons */
+    button, .stButton > button {
+        font-size: 0.88rem !important;
+        padding: 0.5rem 0.75rem !important;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   MOBILE NHỎ — max-width: 480px
+   ════════════════════════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+    .block-container {
+        padding-left: 0.35rem !important;
+        padding-right: 0.35rem !important;
+    }
+
+    /* Brand bar: chỉ hiện logo + badge */
+    .top-brand-bar {
+        padding: 0.6rem 0.8rem;
+        border-radius: 8px;
+    }
+    .top-brand-title { font-size: 1.05rem; gap: 6px; }
+
+    /* Ẩn badge LIVE trên mobile nhỏ để tiết kiệm không gian */
+    .top-badge-live { display: none; }
+
+    /* Metric */
+    .metric-value { font-size: 1.1rem; }
+    .metric-label { font-size: 0.68rem; }
+
+    /* NBA card */
+    .nba-card { padding: 0.65rem 0.75rem; border-radius: 8px; }
+    .nba-title { font-size: 0.9rem; }
+    .nba-details { grid-template-columns: 1fr; font-size: 0.76rem; }
+    .nba-script { font-size: 0.76rem; padding: 0.5rem 0.6rem; }
+
+    /* Banking table */
+    .banking-table { font-size: 0.72rem; }
+    .banking-table th, .banking-table td { padding: 0.4rem 0.55rem; }
+    .banking-panel-header { font-size: 0.78rem; padding: 0.5rem 0.7rem; }
+
+    /* Glassmorphism login */
+    .glass-login-card {
+        padding: 1.1rem 0.9rem;
+        border-radius: 14px;
+    }
+    .glass-login-title { font-size: 1.3rem; }
+    .glass-login-sub { font-size: 0.8rem; }
+
+    /* eKYC QR */
+    .ekyc-qr-container img { max-width: 140px; }
+
+    /* Buttons: full width trên mobile */
+    .stButton > button, [data-testid="stFormSubmitButton"] button {
+        width: 100% !important;
+        font-size: 0.88rem !important;
+    }
+
+    /* Input */
+    .stTextInput input, .stSelectbox select {
+        font-size: 0.88rem !important;
+    }
+
+    /* Customer face portrait nhỏ hơn */
+    .cust-face-portrait { width: 64px; height: 80px; border-radius: 8px; }
+
+    /* Badge: thu nhỏ */
+    .badge-diamond, .badge-prime, .badge-mass,
+    .badge-diamond-small, .badge-prime-small, .badge-mass-small {
+        font-size: 0.68rem !important;
+        padding: 0.15rem 0.5rem !important;
+    }
+
+    /* Profile card */
+    .cust-profile-card {
+        padding: 0.7rem 0.8rem;
+        border-radius: 10px;
+    }
+
+    /* Signal pills: stack xuống */
+    .signal-pill {
+        font-size: 0.68rem;
+        padding: 0.18rem 0.45rem;
+        margin-right: 4px;
+        margin-bottom: 5px;
+    }
+
+    /* Code CIF */
+    .code-cif { font-size: 0.76rem; }
+
+    /* Card hover: tắt transform trên mobile (performance) */
+    .cust-card-box:hover { transform: none; }
+    .nba-card:hover      { transform: none; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   TOUCH DEVICE OVERRIDES — tắt hover effects trên thiết bị cảm ứng
+   ════════════════════════════════════════════════════════════════════════════════ */
+@media (hover: none) and (pointer: coarse) {
+    .cust-card-box:hover { transform: none; box-shadow: 0 4px 12px rgba(10,37,64,0.05); }
+    .nba-card:hover      { transform: none; }
+    .stButton > button:hover { transform: none !important; }
+    [data-testid="stFormSubmitButton"] button:hover { transform: none !important; }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   STREAMLIT SIDEBAR RESPONSIVE FIXES
+   ════════════════════════════════════════════════════════════════════════════════ */
+[data-testid="stSidebar"] {
+    min-width: 220px !important;
+}
+[data-testid="stSidebar"] .stSelectbox label,
+[data-testid="stSidebar"] .stMarkdown p,
+[data-testid="stSidebar"] .stMarkdown li {
+    font-size: clamp(0.78rem, 1.3vw, 0.9rem) !important;
+}
+[data-testid="stSidebar"] .stButton > button {
+    font-size: clamp(0.78rem, 1.2vw, 0.88rem) !important;
+    padding: 0.4rem 0.6rem !important;
+}
+
+@media (max-width: 768px) {
+    [data-testid="stSidebar"] {
+        min-width: 200px !important;
+    }
+    [data-testid="stSidebar"] > div {
+        padding: 0.8rem 0.6rem !important;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   STREAMLIT TAB RESPONSIVE
+   ════════════════════════════════════════════════════════════════════════════════ */
+[data-testid="stTabs"] [role="tab"] {
+    font-size: clamp(0.76rem, 1.3vw, 0.9rem) !important;
+    padding: 0.5rem clamp(0.4rem, 1vw, 0.75rem) !important;
+    white-space: nowrap;
+}
+[data-testid="stTabsContent"] {
+    padding-top: 0.5rem !important;
+}
+
+@media (max-width: 768px) {
+    [data-testid="stTabs"] {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    [data-testid="stTabs"] [role="tab"] {
+        font-size: 0.74rem !important;
+        padding: 0.4rem 0.5rem !important;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   STREAMLIT EXPANDER RESPONSIVE
+   ════════════════════════════════════════════════════════════════════════════════ */
+[data-testid="stExpander"] summary {
+    font-size: clamp(0.82rem, 1.3vw, 0.95rem) !important;
+}
+@media (max-width: 480px) {
+    [data-testid="stExpander"] summary {
+        font-size: 0.8rem !important;
+    }
+    [data-testid="stExpander"] > div {
+        padding: 0.5rem 0.4rem !important;
+    }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   STREAMLIT METRIC WIDGET RESPONSIVE
+   ════════════════════════════════════════════════════════════════════════════════ */
+[data-testid="stMetric"] label {
+    font-size: clamp(0.72rem, 1.1vw, 0.82rem) !important;
+}
+[data-testid="stMetric"] [data-testid="stMetricValue"] {
+    font-size: clamp(1.1rem, 2.2vw, 1.6rem) !important;
+}
+[data-testid="stMetric"] [data-testid="stMetricDelta"] {
+    font-size: clamp(0.68rem, 1vw, 0.78rem) !important;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   PRINT / HIGH-CONTRAST ACCESSIBILITY
+   ════════════════════════════════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
 </style>""", unsafe_allow_html=True)
 

@@ -249,6 +249,151 @@ div[data-testid="stFormSubmitButton"] button:active {
     border-radius: 6px;
     font-weight: 600;
 }
+
+/* ════════════════════════════════════════════════════════════════════════════════
+   RESPONSIVE — Auth Screen Media Queries
+   ════════════════════════════════════════════════════════════════════════════════ */
+
+/* Base fluid values (shared across all sizes) */
+.auth-glass-card {
+    width: min(440px, 94vw);
+    padding: clamp(1.6rem, 4vw, 40px) clamp(1.4rem, 3.5vw, 36px) clamp(1.4rem, 3vw, 32px);
+    border-radius: clamp(16px, 3vw, 28px);
+}
+
+.auth-title {
+    font-size: clamp(1.4rem, 4vw, 1.85rem) !important;
+}
+
+.auth-subtitle {
+    font-size: clamp(0.8rem, 2vw, 0.92rem) !important;
+}
+
+/* Touch-friendly inputs & buttons */
+div[data-testid="stTextInput"] input,
+div[data-testid="stSelectbox"] > div > div {
+    min-height: 44px !important;
+    font-size: clamp(0.84rem, 2vw, 0.92rem) !important;
+}
+
+div[data-testid="stFormSubmitButton"] button {
+    min-height: 48px !important;
+    font-size: clamp(0.88rem, 2.2vw, 1rem) !important;
+    border-radius: clamp(10px, 2vw, 12px) !important;
+}
+
+.social-btn {
+    height: clamp(42px, 6vw, 42px);
+    font-size: clamp(0.78rem, 1.8vw, 0.88rem) !important;
+    border-radius: clamp(10px, 2vw, 12px) !important;
+}
+
+.auth-demo-helper {
+    font-size: clamp(0.72rem, 1.6vw, 0.78rem);
+    padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 14px);
+}
+
+/* ── Tablet ngang: 1024px ────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+    /* Background gradient còn nguyên, card thu lại */
+    .auth-glass-card {
+        width: min(420px, 90vw);
+        padding: 1.8rem 2rem;
+    }
+    .auth-title { font-size: 1.7rem !important; }
+}
+
+/* ── Tablet dọc: 768px ───────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    /* Ẩn sidebar Streamlit trên màn hình nhỏ (đã khai báo trước nhưng reinforce) */
+    [data-testid="stSidebar"] { display: none !important; }
+
+    .auth-glass-card {
+        width: min(400px, 96vw);
+        padding: 1.5rem 1.6rem;
+        border-radius: 20px;
+    }
+
+    .auth-title { font-size: 1.55rem !important; }
+    .auth-subtitle { font-size: 0.84rem !important; }
+
+    .auth-divider { margin: 1.1rem 0 1rem 0; }
+
+    /* Bỏ qua animation fadeInScale trên tablet để tránh jank */
+    .auth-glass-card { animation: none; }
+
+    /* Social buttons: stack vertically on narrow tablet */
+    .social-btn {
+        height: 44px;
+        font-size: 0.82rem !important;
+    }
+
+    /* Demo helper */
+    .auth-demo-helper {
+        font-size: 0.72rem;
+        padding: 8px 10px;
+        border-radius: 10px;
+        margin-top: 1rem;
+    }
+
+    /* Footer switch link */
+    .auth-footer { font-size: 0.82rem; margin-top: 1.2rem; }
+}
+
+/* ── Mobile nhỏ: 480px ───────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+    /* Full-width card sát cạnh màn hình */
+    .auth-glass-card {
+        width: 98vw;
+        padding: 1.2rem 1rem;
+        border-radius: 16px;
+        box-shadow: 0 15px 35px -10px rgba(0,0,0,0.5);
+    }
+
+    .auth-title {
+        font-size: 1.35rem !important;
+        letter-spacing: -0.03em !important;
+    }
+    .auth-subtitle { font-size: 0.78rem !important; margin-bottom: 1.2rem !important; }
+
+    /* Inputs: full width, tăng min-height để dễ chạm */
+    div[data-testid="stTextInput"] input {
+        min-height: 48px !important;
+        font-size: 0.9rem !important;
+        border-radius: 10px !important;
+        padding: 0.7rem 0.9rem !important;
+    }
+
+    /* Submit button: to và nổi bật */
+    div[data-testid="stFormSubmitButton"] button {
+        min-height: 52px !important;
+        font-size: 1rem !important;
+        border-radius: 12px !important;
+        margin-top: 0.6rem !important;
+    }
+
+    /* Social buttons: stack 1 cột */
+    .social-btn { height: 46px; border-radius: 10px !important; }
+
+    /* Extras row */
+    .auth-extras { flex-direction: column; gap: 0.5rem; }
+
+    /* Divider */
+    .auth-divider { margin: 1rem 0 0.8rem 0; font-size: 0.76rem; }
+
+    /* Demo helper */
+    .auth-demo-helper { font-size: 0.7rem; line-height: 1.5; }
+    .auth-demo-badge { font-size: 0.7rem; padding: 1px 5px; }
+}
+
+/* ── Touch devices: tắt hover effects ───────────────────────────────────────── */
+@media (hover: none) and (pointer: coarse) {
+    div[data-testid="stFormSubmitButton"] button:hover {
+        transform: none !important;
+        box-shadow: 0 10px 22px -5px rgba(59,130,246,0.5) !important;
+    }
+    .social-btn:hover { transform: none; }
+}
 </style>
 """
 

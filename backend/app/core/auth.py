@@ -2,15 +2,16 @@
 """
 backend/app/core/auth.py
 Module Quản lý Xác thực & Phân quyền (Authentication & RBAC).
-Refactored: imports từ backend.app.core.mongo_connector (centralized).
+Refactored: JWT-based auth, refresh tokens stored in MongoDB users.tokens[].
 """
 import os
 import sys
 import json
-import hashlib
-import binascii
+import logging
 from datetime import datetime
 from typing import Optional, List, Dict, Any
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 # ─── Path bootstrap ───────────────────────────────────────────────────────────
 _root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
@@ -18,59 +19,99 @@ if _root_dir not in sys.path:
     sys.path.insert(0, _root_dir)
 
 try:
-    from backend.app.core.mongo_connector import get_database
+    from backend.app.core.db_connector import get_db_connector
+    from backend.app.core.security import (
+        hash_password, verify_password,
+        create_access_token, create_refresh_token,
+        decode_access_token, decode_refresh_token,
+    )
 except ImportError:
-    from app.core.mongo_connector import get_database  # type: ignore
+    from app.core.db_connector import get_db_connector  # type: ignore
+    from app.core.security import (  # type: ignore
+        hash_password, verify_password,
+        create_access_token, create_refresh_token,
+        decode_access_token, decode_refresh_token,
+    )
+
+logger = logging.getLogger(__name__)
+
+# HTTPBearer scheme for Authorization header
+security = HTTPBearer()
 
 # ─── Hằng số Vai trò (Roles) ──────────────────────────────────────────────────
-ROLE_TELLER  = "GDV"
-ROLE_MANAGER = "MANAGER"
-ROLE_ADMIN   = "ADMIN"
+ROLE_TELLER     = "GDV"
+ROLE_MANAGER    = "MANAGER"
+ROLE_ADMIN      = "ADMIN"
+ROLE_COMPLIANCE = "COMPLIANCE"
 
 ROLE_LABELS = {
-    ROLE_TELLER:  "🏢 Giao Dịch Viên",
-    ROLE_MANAGER: "📊 Giám Đốc Chi Nhánh",
-    ROLE_ADMIN:   "🛡️ Quản Trị Viên Hệ Thống",
+    ROLE_TELLER:     "🏢 Giao Dịch Viên",
+    ROLE_MANAGER:    "📊 Giám Đốc Chi Nhánh",
+    ROLE_ADMIN:      "🛡️ Quản Trị Viên Hệ Thống",
+    ROLE_COMPLIANCE: "📋 Kiểm Soát Tuân Thủ",
 }
 ROLE_BADGE_CLASSES = {
-    ROLE_TELLER:  "badge-mass",
-    ROLE_MANAGER: "badge-prime",
-    ROLE_ADMIN:   "badge-diamond",
+    ROLE_TELLER:     "badge-mass",
+    ROLE_MANAGER:    "badge-prime",
+    ROLE_ADMIN:      "badge-diamond",
+    ROLE_COMPLIANCE: "badge-secure",
 }
 
 FALLBACK_USERS_FILE = os.path.join(os.path.dirname(__file__), "users_fallback.json")
 
 
-# ─── Password Helpers ─────────────────────────────────────────────────────────
+# ─── JWT Dependency Injection ─────────────────────────────────────────────────
 
-def hash_password(password: str, salt: bytes = None) -> str:
-    """Mã hóa mật khẩu sử dụng PBKDF2-HMAC-SHA256."""
-    if salt is None:
-        salt = os.urandom(16)
-    hash_bytes = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, 100_000)
-    return f"pbkdf2_sha256${binascii.hexlify(salt).decode()}${binascii.hexlify(hash_bytes).decode()}"
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
+    """
+    FastAPI dependency: Extract and verify JWT access token from Authorization header.
+    Returns user dict if valid, raises 401 if invalid/expired.
+    """
+    token = credentials.credentials
+    payload = decode_access_token(token)
+    if not payload:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired access token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    username = payload.get("sub")
+    if not username:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token missing subject")
+    
+    # Fetch user from DB
+    user = get_user_by_username(username)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+    
+    if user.get("status") != "ACTIVE":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account locked")
+    
+    return user
 
 
-def verify_password(password: str, stored_hash: str) -> bool:
-    """Xác minh mật khẩu so với hash đã lưu."""
-    try:
-        if not stored_hash or not stored_hash.startswith("pbkdf2_sha256$"):
-            return False
-        parts = stored_hash.split("$")
-        if len(parts) != 3:
-            return False
-        salt = binascii.unhexlify(parts[1])
-        return stored_hash == hash_password(password, salt)
-    except Exception as e:
-        print(f"⚠️ Lỗi verify_password: {e}")
-        return False
+def require_role(*allowed_roles: str):
+    """
+    RBAC decorator factory: returns a FastAPI dependency that checks user role.
+    Usage:
+        @router.get("/admin-only", dependencies=[Depends(require_role(ROLE_ADMIN))])
+    """
+    async def role_checker(user: Dict[str, Any] = Depends(get_current_user)) -> Dict[str, Any]:
+        if user.get("role") not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Insufficient permissions. Required: {allowed_roles}"
+            )
+        return user
+    return role_checker
 
 
 # ─── Default Users ────────────────────────────────────────────────────────────
 
 def get_default_users() -> List[Dict[str, Any]]:
     """Tài khoản Admin mặc định — nạp từ .env hoặc biến môi trường."""
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now_str = datetime.utcnow().isoformat()
     return [{
         "username":      os.getenv("ADMIN_USERNAME", "admin"),
         "password_hash": hash_password(os.getenv("ADMIN_PASSWORD", "Admin@123")),
@@ -80,6 +121,7 @@ def get_default_users() -> List[Dict[str, Any]]:
         "branch":        os.getenv("ADMIN_BRANCH", "Chi nhánh Hội Sở"),
         "status":        "ACTIVE",
         "created_at":    now_str,
+        "tokens":        [],
     }]
 
 
@@ -91,7 +133,7 @@ def _save_fallback_users(users: List[Dict[str, Any]]):
         with open(FALLBACK_USERS_FILE, "w", encoding="utf-8") as f:
             json.dump(clean, f, ensure_ascii=False, indent=2)
     except Exception as e:
-        print(f"⚠️ Không thể lưu fallback users: {e}")
+        logger.warning(f"Cannot save fallback users: {e}")
 
 
 def _load_fallback_users() -> List[Dict[str, Any]]:
@@ -106,39 +148,54 @@ def _load_fallback_users() -> List[Dict[str, Any]]:
     return defaults
 
 
-# ─── MongoDB User Operations ──────────────────────────────────────────────────
+# ─── MongoDB User Operations (refactored with db_connector) ───────────────────
 
 def init_users_collection():
     """Khởi tạo / Đồng bộ tài khoản mặc định vào MongoDB collection 'users'."""
     try:
-        db = get_database()
-        col = db["users"]
-        existing = {u.get("username", "").lower() for u in col.find({}, {"username": 1, "_id": 0})}
+        connector = get_db_connector()
+        col = connector.get_collection("users")
+        existing = {u.get("username", "").lower() for u in col.find({}, limit=1000)}
         missing = [u for u in get_default_users() if u.get("username", "").lower() not in existing]
         if missing:
-            col.insert_many([dict(u) for u in missing])
+            for user in missing:
+                col.insert_one(dict(user))
+            logger.info(f"Initialized {len(missing)} default users")
     except Exception as e:
-        print(f"⚠️ MongoDB không khả dụng ({e}), dùng fallback JSON.")
+        logger.warning(f"MongoDB init_users_collection failed: {e}, using fallback")
         _load_fallback_users()
 
 
 def get_all_users() -> List[Dict[str, Any]]:
     """Lấy tất cả tài khoản từ MongoDB (fallback: JSON)."""
     try:
-        db = get_database()
-        users = list(db["users"].find({}, {"_id": 0}))
+        connector = get_db_connector()
+        col = connector.get_collection("users")
+        users = list(col.find({}, limit=1000))
+        # Remove _id for serialization
+        users = [{k: v for k, v in u.items() if k != "_id"} for u in users]
         if users:
             _save_fallback_users(users)
             return users
     except Exception as e:
-        print(f"⚠️ Lỗi lấy users từ MongoDB: {e}")
+        logger.warning(f"get_all_users MongoDB error: {e}")
     return _load_fallback_users()
 
 
 def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
     """Tìm tài khoản theo username."""
     uname = str(username).strip().lower()
-    return next((u for u in get_all_users() if u.get("username", "").lower() == uname), None)
+    try:
+        connector = get_db_connector()
+        col = connector.get_collection("users")
+        user = col.find_one({"username": uname})
+        if user:
+            return {k: v for k, v in user.items() if k != "_id"}
+    except Exception as e:
+        logger.warning(f"get_user_by_username MongoDB error: {e}")
+    
+    # Fallback
+    return next((u for u in _load_fallback_users() if u.get("username", "").lower() == uname), None)
 
 
 def get_user_by_username_or_email(identifier: str) -> Optional[Dict[str, Any]]:
@@ -151,19 +208,51 @@ def get_user_by_username_or_email(identifier: str) -> Optional[Dict[str, Any]]:
 
 
 def authenticate_user(username: str, password: str) -> Dict[str, Any]:
-    """Xác thực đăng nhập (hỗ trợ cả Username và Email) — trả về dict {success, message, user?}."""
+    """
+    Xác thực đăng nhập (hỗ trợ Username và Email) — trả về JWT tokens nếu thành công.
+    Returns: {success, message, user?, access_token?, refresh_token?}
+    """
     init_users_collection()
     ident = str(username).strip().lower()
     if not ident or not password:
         return {"success": False, "message": "Vui lòng nhập tên đăng nhập/email và mật khẩu."}
+    
     user = get_user_by_username_or_email(ident)
     if not user:
         return {"success": False, "message": "Tài khoản hoặc email không tồn tại trên hệ thống."}
+    
     if user.get("status") != "ACTIVE":
         return {"success": False, "message": "Tài khoản bị khóa. Vui lòng liên hệ Admin."}
-    if verify_password(password, user.get("password_hash", "")):
-        return {"success": True, "message": "Đăng nhập thành công!", "user": {k: v for k, v in user.items() if k != "password_hash"}}
-    return {"success": False, "message": "Mật khẩu không chính xác."}
+    
+    if not verify_password(password, user.get("password_hash", "")):
+        return {"success": False, "message": "Mật khẩu không chính xác."}
+    
+    # Generate JWT tokens
+    token_data = {"sub": user["username"], "role": user.get("role", ROLE_TELLER)}
+    access_token = create_access_token(token_data)
+    refresh_token = create_refresh_token({"sub": user["username"]})
+    
+    # Store refresh token in MongoDB users.tokens[]
+    try:
+        connector = get_db_connector()
+        col = connector.get_collection("users")
+        col.update_one(
+            {"username": user["username"]},
+            {"$push": {"tokens": {
+                "refresh_token": refresh_token,
+                "created_at": datetime.utcnow().isoformat(),
+            }}}
+        )
+    except Exception as e:
+        logger.warning(f"Failed to store refresh token: {e}")
+    
+    return {
+        "success": True,
+        "message": "Đăng nhập thành công!",
+        "user": {k: v for k, v in user.items() if k not in ("password_hash", "tokens", "_id")},
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+    }
 
 
 def register_user(username: str, password: str, full_name: str,
@@ -185,7 +274,7 @@ def register_user(username: str, password: str, full_name: str,
     if email and ("@" not in clean_email or "." not in clean_email):
         return {"success": False, "message": "Địa chỉ email không hợp lệ."}
     
-    # Kiểm tra trùng email
+    # Check email duplication
     if any(u.get("email", "").lower() == clean_email for u in get_all_users()):
         return {"success": False, "message": f"Email '{clean_email}' đã được đăng ký."}
     
@@ -202,30 +291,33 @@ def register_user(username: str, password: str, full_name: str,
         "role":          role,
         "branch":        branch.strip(),
         "status":        "ACTIVE",
-        "created_at":    datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "created_at":    datetime.utcnow().isoformat(),
+        "tokens":        [],  # For refresh tokens
     }
     
-    mongo_saved = False
     try:
-        get_database()["users"].insert_one(new_user.copy())
-        mongo_saved = True
+        connector = get_db_connector()
+        col = connector.get_collection("users")
+        col.insert_one(new_user.copy())
+        logger.info(f"User '{uname}' registered in MongoDB")
     except Exception as e:
-        print(f"⚠️ Không thể lưu vào MongoDB: {e}")
-
+        logger.warning(f"MongoDB insert failed: {e}")
+    
+    # Fallback save
     users = _load_fallback_users()
     users.append(new_user)
     _save_fallback_users(users)
-
+    
     return {
         "success": True,
         "message": f"Đăng ký tài khoản '{uname}' thành công! Bạn có thể đăng nhập ngay.",
-        "user": {k: v for k, v in new_user.items() if k != "password_hash"}
+        "user": {k: v for k, v in new_user.items() if k not in ("password_hash", "tokens")}
     }
 
 
 def create_user(username: str, password: str, full_name: str,
                 user_code: str, role: str, branch: str = "Chi nhánh Hội Sở") -> Dict[str, Any]:
-    """Tạo tài khoản nhân viên mới."""
+    """Tạo tài khoản nhân viên mới (Admin only)."""
     uname = str(username).strip().lower()
     if len(uname) < 3:
         return {"success": False, "message": "Tên đăng nhập phải từ 3 ký tự."}
@@ -246,20 +338,24 @@ def create_user(username: str, password: str, full_name: str,
         "role":          role,
         "branch":        branch.strip(),
         "status":        "ACTIVE",
-        "created_at":    datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "created_at":    datetime.utcnow().isoformat(),
+        "tokens":        [],
     }
+    
     mongo_saved = False
     try:
-        get_database()["users"].insert_one(new_user.copy())
+        connector = get_db_connector()
+        col = connector.get_collection("users")
+        col.insert_one(new_user.copy())
         mongo_saved = True
     except Exception as e:
-        print(f"⚠️ Không thể lưu vào MongoDB: {e}")
+        logger.warning(f"MongoDB create_user failed: {e}")
 
     users = _load_fallback_users()
     users.append(new_user)
     _save_fallback_users(users)
 
-    db_msg = "MongoDB Atlas & Fallback" if mongo_saved else "Fallback Local"
+    db_msg = "MongoDB & Fallback" if mongo_saved else "Fallback Only"
     return {"success": True, "message": f"Đã tạo tài khoản '{uname}' [{ROLE_LABELS.get(role)}] ({db_msg})."}
 
 
@@ -269,9 +365,12 @@ def update_user_role(username: str, new_role: str) -> Dict[str, Any]:
     if new_role not in ROLE_LABELS:
         return {"success": False, "message": "Vai trò không hợp lệ."}
     try:
-        get_database()["users"].update_one({"username": uname}, {"$set": {"role": new_role}})
+        connector = get_db_connector()
+        col = connector.get_collection("users")
+        col.update_one({"username": uname}, {"$set": {"role": new_role}})
     except Exception as e:
-        print(f"⚠️ Lỗi MongoDB update role: {e}")
+        logger.warning(f"MongoDB update role failed: {e}")
+    
     users = _load_fallback_users()
     for u in users:
         if u.get("username", "").lower() == uname:
@@ -289,9 +388,12 @@ def toggle_user_status(username: str) -> Dict[str, Any]:
         return {"success": False, "message": "Không tìm thấy người dùng."}
     new_status = "LOCKED" if user.get("status") == "ACTIVE" else "ACTIVE"
     try:
-        get_database()["users"].update_one({"username": uname}, {"$set": {"status": new_status}})
+        connector = get_db_connector()
+        col = connector.get_collection("users")
+        col.update_one({"username": uname}, {"$set": {"status": new_status}})
     except Exception as e:
-        print(f"⚠️ Lỗi MongoDB toggle status: {e}")
+        logger.warning(f"MongoDB toggle status failed: {e}")
+    
     users = _load_fallback_users()
     for u in users:
         if u.get("username", "").lower() == uname:
@@ -309,9 +411,12 @@ def reset_user_password(username: str, new_password: str) -> Dict[str, Any]:
         return {"success": False, "message": "Mật khẩu mới phải từ 6 ký tự."}
     new_hash = hash_password(new_password)
     try:
-        get_database()["users"].update_one({"username": uname}, {"$set": {"password_hash": new_hash}})
+        connector = get_db_connector()
+        col = connector.get_collection("users")
+        col.update_one({"username": uname}, {"$set": {"password_hash": new_hash}})
     except Exception as e:
-        print(f"⚠️ Lỗi MongoDB reset password: {e}")
+        logger.warning(f"MongoDB reset password failed: {e}")
+    
     users = _load_fallback_users()
     for u in users:
         if u.get("username", "").lower() == uname:
@@ -319,3 +424,21 @@ def reset_user_password(username: str, new_password: str) -> Dict[str, Any]:
             break
     _save_fallback_users(users)
     return {"success": True, "message": f"Đã đổi mật khẩu thành công cho '{uname}'."}
+
+
+def revoke_refresh_token(username: str, refresh_token: str) -> Dict[str, Any]:
+    """
+    Revoke (remove) a refresh token from user's tokens array.
+    Used for logout.
+    """
+    try:
+        connector = get_db_connector()
+        col = connector.get_collection("users")
+        col.update_one(
+            {"username": username},
+            {"$pull": {"tokens": {"refresh_token": refresh_token}}}
+        )
+        return {"success": True, "message": "Refresh token revoked"}
+    except Exception as e:
+        logger.error(f"revoke_refresh_token failed: {e}")
+        return {"success": False, "message": str(e)}

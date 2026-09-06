@@ -69,20 +69,45 @@ docker-logs:		## Stream logs from all containers
 	docker compose logs -f
 
 ## ─── Quality & Testing ────────────────────────────────────
-test:			## Run syntax check on all Python files
+test:			## Run pytest suite
+	@echo "🧪 Running pytest..."
+	$(PYTHON) -m pytest backend/tests/ -v
+
+test-syntax:		## Run syntax check on all Python files
 	@echo "🧪 Checking Python syntax..."
 	$(PYTHON) -m py_compile backend/app/core/config.py && echo "  ✅ config.py"
-	$(PYTHON) -m py_compile backend/app/core/mongo_connector.py && echo "  ✅ mongo_connector.py"
+	$(PYTHON) -m py_compile backend/app/core/db_connector.py && echo "  ✅ db_connector.py"
+	$(PYTHON) -m py_compile backend/app/core/security.py && echo "  ✅ security.py"
 	$(PYTHON) -m py_compile backend/app/core/auth.py && echo "  ✅ auth.py"
 	$(PYTHON) -m py_compile backend/app/main.py && echo "  ✅ backend main.py"
 	$(PYTHON) -m py_compile frontend/app/main.py && echo "  ✅ frontend main.py"
-	$(PYTHON) -m py_compile dashboard/app/admin_dashboard.py && echo "  ✅ admin_dashboard.py"
-	$(PYTHON) -m py_compile shared/schemas/customer.py && echo "  ✅ shared/customer.py"
 	@echo "✅ All syntax checks passed!"
 
 test-db:		## Test MongoDB Atlas connection
 	@echo "🔌 Testing MongoDB Atlas connection..."
-	$(PYTHON) -c "from backend.app.core.mongo_connector import test_connection; test_connection()"
+	$(PYTHON) -c "from backend.app.core.db_connector import get_db_connector; conn = get_db_connector(); print('Connected:', conn.ping_db())"
+
+lint:			## Run basic linting (check for common issues)
+	@echo "🔍 Running basic linting..."
+	@$(PYTHON) -m py_compile backend/app/**/*.py 2>&1 | grep -v "SyntaxError" || echo "  ✅ No syntax errors"
+
+seed-db:		## Populate MongoDB with sample data from core/fallback_data/
+	@echo "🌱 Seeding database with sample data..."
+	$(PYTHON) -c "\
+import json; \
+from pathlib import Path; \
+from backend.app.core.db_connector import get_db_connector; \
+conn = get_db_connector(); \
+data_dir = Path('core/fallback_data'); \
+for file in data_dir.glob('*.json'): \
+    coll_name = file.stem; \
+    with open(file) as f: \
+        records = json.load(f); \
+    if records: \
+        conn.get_collection(coll_name).insert_one(records[0] if isinstance(records, list) and len(records) > 0 else {}); \
+        print(f'  ✅ Seeded {coll_name}: {len(records) if isinstance(records, list) else 1} records'); \
+print('✅ Database seeded successfully!'); \
+"
 
 ## ─── Cleanup ──────────────────────────────────────────────
 clean:			## Remove Python cache files

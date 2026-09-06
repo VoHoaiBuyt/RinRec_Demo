@@ -16,6 +16,7 @@ services:
     volumes:
       - ./backend:/app/backend
       - ./shared:/app/shared
+      - ./logs:/app/logs  # Logs volume
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -42,6 +43,7 @@ services:
       - ./backend:/app/backend
       - ./shared:/app/shared
       - ./face_engine:/app/face_engine
+      - ./logs:/app/logs  # Logs volume
     depends_on:
       backend:
         condition: service_healthy
@@ -49,6 +51,22 @@ services:
     networks:
       - rinrec_net
 
+  # ─── Redis (Optional): Rate limiting & session cache ──────────────────────
+  # Uncomment to enable Redis for production rate limiting
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: rinrec_redis
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   restart: unless-stopped
+  #   networks:
+  #     - rinrec_net
+
 networks:
   rinrec_net:
     driver: bridge
+
+# volumes:
+#   redis_data:

@@ -1,0 +1,42 @@
+[
+  {
+    "product_id": "PROD_001",
+    "product_name": "Thẻ tín dụng VPBank Platinum",
+    "category": "Credit Card",
+    "description": "Thẻ tín dụng ưu đãi hoàn tiền 2% mọi giao dịch",
+    "interest_rate": 0.0,
+    "min_income": 15000000,
+    "target_segment": ["MASS", "PRIME"],
+    "status": "ACTIVE"
+  },
+  {
+    "product_id": "PROD_002",
+    "product_name": "Vay tiêu dùng không thế chấp",
+    "category": "Loan",
+    "description": "Vay nhanh lên đến 500 triệu, lãi suất ưu đãi 0.99%/tháng",
+    "interest_rate": 11.88,
+    "min_income": 8000000,
+    "target_segment": ["MASS", "PRIME", "DIAMOND"],
+    "status": "ACTIVE"
+  },
+  {
+    "product_id": "PROD_003",
+    "product_name": "Tiết kiệm online VPBank",
+    "category": "Savings",
+    "description": "Lãi suất cạnh tranh 6.5%/năm, rút linh hoạt",
+    "interest_rate": 6.5,
+    "min_income": 0,
+    "target_segment": ["MASS", "PRIME", "DIAMOND"],
+    "status": "ACTIVE"
+  },
+  {
+    "product_id": "PROD_004",
+    "product_name": "Bảo hiểm sức khỏe FWD",
+    "category": "Insurance",
+    "description": "Bảo hiểm y tế toàn diện, chi trả nhanh",
+    "interest_rate": 0.0,
+    "min_income": 10000000,
+    "target_segment": ["PRIME", "DIAMOND"],
+    "status": "ACTIVE"
+  }
+]

@@ -1,0 +1,26 @@
+[
+  {
+    "rule_id": "RULE_001",
+    "rule_name": "High Income → Premium Card",
+    "condition": "income >= 50000000",
+    "recommended_products": ["PROD_001", "PROD_004"],
+    "priority": 10,
+    "status": "ACTIVE"
+  },
+  {
+    "rule_id": "RULE_002",
+    "rule_name": "Young Professional → Loan",
+    "condition": "age >= 25 AND age <= 40 AND income >= 15000000",
+    "recommended_products": ["PROD_002"],
+    "priority": 5,
+    "status": "ACTIVE"
+  },
+  {
+    "rule_id": "RULE_003",
+    "rule_name": "Mass Segment → Savings",
+    "condition": "segment == 'MASS'",
+    "recommended_products": ["PROD_003"],
+    "priority": 3,
+    "status": "ACTIVE"
+  }
+]
