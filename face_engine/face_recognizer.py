@@ -10,7 +10,7 @@ import time
 import json
 import base64
 import logging
-from typing import Dict, Any, List, Optional, Tuple, Union
+from typing import Dict, Any, List, Optional, Union
 import numpy as np
 from PIL import Image
 
@@ -43,7 +43,6 @@ try:
     from core.mongo_connector import (
         upsert_customer_face,
         get_customer_faces,
-        get_customer_face,
         delete_customer_face,
         update_customer_ekyc_status
     )
@@ -53,7 +52,6 @@ except Exception as e:
     HAS_MONGO = False
     upsert_customer_face = None
     get_customer_faces = None
-    get_customer_face = None
     delete_customer_face = None
     update_customer_ekyc_status = None
 

@@ -5,7 +5,7 @@ Generates realistic face portrait files in face_engine/customer_faces/
 
 import os
 import numpy as np
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 import cv2
 
 def create_synthetic_portrait(cif: str, name: str, segment: str, bg_color: tuple, skin_tone: tuple, hair_color: tuple, gender: str = "M") -> np.ndarray:

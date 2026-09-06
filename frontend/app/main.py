@@ -7,22 +7,31 @@ from typing import Optional
 import streamlit as st
 import pandas as pd
 
-# Đảm bảo root directory luôn có trong sys.path
-_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+# Đảm bảo root directory (monorepo root) luôn có trong sys.path
+_root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 if _root_dir not in sys.path:
     sys.path.insert(0, _root_dir)
 
-from core.auth import (
-    authenticate_user, register_user, get_all_users, create_user, update_user_role,
-    toggle_user_status, reset_user_password, ROLE_TELLER, ROLE_MANAGER,
-    ROLE_ADMIN, ROLE_LABELS, ROLE_BADGE_CLASSES
-)
+try:
+    # Monorepo structure: backend/app/core
+    from backend.app.core.auth import (
+        authenticate_user, register_user, get_all_users, create_user, update_user_role,
+        toggle_user_status, reset_user_password, ROLE_TELLER, ROLE_MANAGER,
+        ROLE_ADMIN, ROLE_LABELS, ROLE_BADGE_CLASSES
+    )
+except ImportError:
+    # Legacy fallback: core/ at root
+    from core.auth import (  # type: ignore
+        authenticate_user, register_user, get_all_users, create_user, update_user_role,
+        toggle_user_status, reset_user_password, ROLE_TELLER, ROLE_MANAGER,
+        ROLE_ADMIN, ROLE_LABELS, ROLE_BADGE_CLASSES
+    )
 
 try:
     from frontend.app.components.auth_ui import render_auth_screen
 except ImportError:
     try:
-        from components.auth_ui import render_auth_screen
+        from app.components.auth_ui import render_auth_screen
     except ImportError:
         render_auth_screen = None
 
@@ -872,17 +881,23 @@ def generate_personalized_signals(user_records, user_recs):
 # HÀM TẢI & CACHE DỮ LIỆU SẢN PHẨM / KHÁCH HÀNG TỪ MONGODB ATLAS
 # ==============================================================================
 try:
-    from core.mongo_connector import (
+    from backend.app.core.mongo_connector import (  # Monorepo path
         get_collection_df, add_transaction, create_customer,
         add_product, log_consultation, get_consultation_logs
     )
-except Exception:
-    get_collection_df = None
-    add_transaction = None
-    create_customer = None
-    add_product = None
-    log_consultation = None
-    get_consultation_logs = None
+except ImportError:
+    try:
+        from core.mongo_connector import (  # type: ignore  # Legacy fallback
+            get_collection_df, add_transaction, create_customer,
+            add_product, log_consultation, get_consultation_logs
+        )
+    except Exception:
+        get_collection_df = None
+        add_transaction = None
+        create_customer = None
+        add_product = None
+        log_consultation = None
+        get_consultation_logs = None
 
 # Tích hợp Module Nhận Diện Khuôn Mặt & Cross-Device Session
 face_engine_error = None

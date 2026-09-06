@@ -178,19 +178,30 @@ def get_user_by_username(username: str) -> Optional[Dict[str, Any]]:
     return None
 
 
+def get_user_by_username_or_email(identifier: str) -> Optional[Dict[str, Any]]:
+    """
+    Tìm tài khoản người dùng theo username hoặc email.
+    """
+    ident = str(identifier).strip().lower()
+    for u in get_all_users():
+        if u.get("username", "").strip().lower() == ident or u.get("email", "").strip().lower() == ident:
+            return u
+    return None
+
+
 def authenticate_user(username: str, password: str) -> Dict[str, Any]:
     """
-    Xác thực thông tin đăng nhập.
+    Xác thực thông tin đăng nhập (hỗ trợ cả Username và Email).
     Trả về dict dạng: {"success": True/False, "message": str, "user": dict}
     """
     init_users_collection()
-    uname_clean = str(username).strip().lower()
-    if not uname_clean or not password:
-        return {"success": False, "message": "Vui lòng nhập tên đăng nhập và mật khẩu."}
+    ident = str(username).strip().lower()
+    if not ident or not password:
+        return {"success": False, "message": "Vui lòng nhập tên đăng nhập/email và mật khẩu."}
     
-    user = get_user_by_username(uname_clean)
+    user = get_user_by_username_or_email(ident)
     if not user:
-        return {"success": False, "message": "Tài khoản không tồn tại trên hệ thống."}
+        return {"success": False, "message": "Tài khoản hoặc email không tồn tại trên hệ thống."}
     
     if user.get("status") != "ACTIVE":
         return {"success": False, "message": "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ Admin."}
@@ -201,6 +212,64 @@ def authenticate_user(username: str, password: str) -> Dict[str, Any]:
         return {"success": True, "message": "Đăng nhập thành công!", "user": user_info}
     else:
         return {"success": False, "message": "Mật khẩu không chính xác. Vui lòng thử lại."}
+
+
+def register_user(username: str, password: str, full_name: str,
+                  email: Optional[str] = None, role: str = ROLE_TELLER,
+                  branch: str = "Chi nhánh Hội Sở") -> Dict[str, Any]:
+    """
+    Đăng ký tài khoản người dùng mới (hỗ trợ form Sign Up).
+    """
+    uname_clean = str(username).strip().lower()
+    if len(uname_clean) < 3:
+        return {"success": False, "message": "Tên đăng nhập phải từ 3 ký tự."}
+    if len(password) < 6:
+        return {"success": False, "message": "Mật khẩu phải từ 6 ký tự."}
+    if not full_name or not full_name.strip():
+        return {"success": False, "message": "Vui lòng nhập Họ và Tên."}
+    
+    if get_user_by_username(uname_clean):
+        return {"success": False, "message": f"Tên đăng nhập '{uname_clean}' đã tồn tại."}
+    
+    clean_email = str(email).strip().lower() if email else f"{uname_clean}@vpbank.com.vn"
+    if email and ("@" not in clean_email or "." not in clean_email):
+        return {"success": False, "message": "Địa chỉ email không hợp lệ."}
+    
+    if any(u.get("email", "").lower() == clean_email for u in get_all_users()):
+        return {"success": False, "message": f"Email '{clean_email}' đã được đăng ký."}
+    
+    if role not in ROLE_LABELS:
+        role = ROLE_TELLER
+    
+    user_code = f"VP{os.urandom(2).hex().upper()}"
+    new_user = {
+        "username":      uname_clean,
+        "email":         clean_email,
+        "password_hash": hash_password(password),
+        "full_name":     full_name.strip(),
+        "user_code":     user_code,
+        "role":          role,
+        "branch":        branch.strip(),
+        "status":        "ACTIVE",
+        "created_at":    datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    
+    mongo_saved = False
+    try:
+        get_database()["users"].insert_one(new_user.copy())
+        mongo_saved = True
+    except Exception as e:
+        print(f"⚠️ Không thể lưu vào MongoDB: {e}")
+
+    users = _load_fallback_users()
+    users.append(new_user)
+    _save_fallback_users(users)
+
+    return {
+        "success": True,
+        "message": f"Đăng ký tài khoản '{uname_clean}' thành công! Bạn có thể đăng nhập ngay.",
+        "user": {k: v for k, v in new_user.items() if k != "password_hash"}
+    }
 
 
 def create_user(username: str, password: str, full_name: str, user_code: str, role: str, branch: str = "Chi nhánh Hội Sở") -> Dict[str, Any]:

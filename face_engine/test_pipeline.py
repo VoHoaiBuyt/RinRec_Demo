@@ -4,9 +4,7 @@ Unit Test Pipeline for FaceRecognizerEngine & CrossDeviceSessionManager.
 
 import os
 import sys
-import time
 import base64
-from PIL import Image
 
 # Thêm root vào sys.path
 root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
