@@ -4,6 +4,7 @@ import sys
 import time
 import base64
 import textwrap
+import re
 from typing import Optional, List, Dict, Any
 import streamlit as st
 import pandas as pd
@@ -21,6 +22,12 @@ from core.auth import (
 )
 
 
+# Display labels only: role identifiers and authorization remain unchanged.
+ROLE_LABELS = {
+    role: re.sub(r"^[^\w]+", "", label)
+    for role, label in ROLE_LABELS.items()
+}
+
 # ==============================================================================
 # CẤU HÌNH TRANG WEB & THEME GIAO DIỆN CHUẨN DOANH NGHIỆP (ENTERPRISE BANKING)
 # ==============================================================================
@@ -31,541 +38,16 @@ st.set_page_config(
 )
 
 # Custom CSS giao diện ngân hàng cao cấp
-st.markdown("""<style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
-html, body, [class*="css"] {
-    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.top-brand-bar {
-    background: linear-gradient(135deg, #0A2540 0%, #0D3866 50%, #00B14F 100%);
-    padding: 1.2rem 1.8rem;
-    border-radius: 14px;
-    color: white !important;
-    margin-bottom: 1.5rem;
-    box-shadow: 0 10px 25px -5px rgba(10, 37, 64, 0.25);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-}
-.top-brand-bar * {
-    color: white !important;
-}
-.top-brand-title {
-    font-size: 1.6rem;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.top-brand-sub {
-    font-size: 0.95rem;
-    color: #E2E8F0 !important;
-    margin-top: 4px;
-    font-weight: 500;
-}
-.top-badge-live {
-    background: rgba(0, 177, 79, 0.2);
-    border: 1px solid #00B14F;
-    color: #34D399 !important;
-    padding: 0.35rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.metric-card {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 12px;
-    padding: 1.2rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-}
-.metric-label {
-    font-size: 0.82rem;
-    font-weight: 600;
-    color: #64748B;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.metric-value {
-    font-size: 1.6rem;
-    font-weight: 800;
-    color: #0F172A;
-    margin-top: 4px;
-}
-.metric-note {
-    font-size: 0.82rem;
-    color: #00B14F;
-    font-weight: 600;
-    margin-top: 4px;
-}
-
-.cust-profile-card {
-    background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 100%);
-    border: 1px solid #CBD5E1;
-    border-radius: 14px;
-    padding: 1.4rem 1.6rem;
-    margin-bottom: 1.2rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-}
-
-.badge-diamond {
-    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-    color: #FFFFFF !important;
-    padding: 0.3rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.82rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    display: inline-block;
-}
-.badge-prime {
-    background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
-    color: #FFFFFF !important;
-    padding: 0.3rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.82rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    display: inline-block;
-}
-.badge-mass {
-    background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
-    color: #FFFFFF !important;
-    padding: 0.3rem 0.8rem;
-    border-radius: 20px;
-    font-size: 0.82rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    display: inline-block;
-}
-
-.nba-card {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-left: 6px solid #00B14F;
-    border-radius: 12px;
-    padding: 1.2rem 1.4rem;
-    margin-bottom: 1rem;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
-}
-.nba-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0.6rem;
-}
-.nba-title {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #0A2540;
-}
-.nba-match {
-    background: #ECFDF5;
-    border: 1px solid #A7F3D0;
-    color: #047857;
-    padding: 0.25rem 0.65rem;
-    border-radius: 20px;
-    font-weight: 700;
-    font-size: 0.85rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-.nba-details {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 8px;
-    margin: 0.6rem 0;
-    background: #F8FAFC;
-    padding: 0.6rem 0.8rem;
-    border-radius: 8px;
-    font-size: 0.86rem;
-    color: #334155;
-}
-.nba-value {
-    color: #1E293B;
-    font-size: 0.9rem;
-    margin: 0.5rem 0;
-    line-height: 1.45;
-}
-.nba-script {
-    background: #EFF6FF;
-    border-left: 3px solid #3B82F6;
-    border-radius: 6px;
-    padding: 0.7rem 0.9rem;
-    color: #1E40AF;
-    font-size: 0.88rem;
-    margin-top: 0.6rem;
-}
-.nba-script-tag {
-    font-weight: 700;
-    color: #1D4ED8;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    display: block;
-    margin-bottom: 3px;
-}
-
-.signal-pill {
-    font-size: 0.82rem;
-    font-weight: 600;
-    padding: 0.3rem 0.75rem;
-    border-radius: 20px;
-    display: inline-block;
-    margin-right: 6px;
-    margin-bottom: 6px;
-}
-.signal-pill-vip {
-    background: #FEF3C7;
-    border: 1px solid #FCD34D;
-    color: #92400E;
-}
-.signal-pill-need {
-    background: #EFF6FF;
-    border: 1px solid #BFDBFE;
-    color: #1E40AF;
-}
-.signal-pill-opp {
-    background: #ECFDF5;
-    border: 1px solid #A7F3D0;
-    color: #065F46;
-}
-.signal-pill-chan {
-    background: #F3E8FF;
-    border: 1px solid #DDD6FE;
-    color: #6B21A8;
-}
-.signal-pill-recent {
-    background: #F1F5F9;
-    border: 1px solid #CBD5E1;
-    color: #334155;
-}
-
-/* AI Smart Counter & Cross-Device eKYC CSS */
-.ekyc-card-box {
-    background: linear-gradient(135deg, #0A2540 0%, #0F3862 100%);
-    border: 1px solid #00B14F;
-    border-radius: 16px;
-    padding: 1.4rem 1.6rem;
-    color: white !important;
-    margin-bottom: 1.2rem;
-    box-shadow: 0 10px 25px -5px rgba(0, 177, 79, 0.2);
-}
-.ekyc-card-box * {
-    color: white !important;
-}
-.ekyc-qr-container {
-    background: #FFFFFF;
-    padding: 1rem;
-    border-radius: 14px;
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-}
-.cust-face-portrait {
-    width: 100px;
-    height: 120px;
-    border-radius: 12px;
-    object-fit: cover;
-    border: 2.5px solid #00B14F;
-    box-shadow: 0 4px 12px rgba(0, 177, 79, 0.25);
-}
-.ekyc-verified-badge {
-    background: rgba(0, 177, 79, 0.2);
-    border: 1px solid #00B14F;
-    color: #34D399 !important;
-    padding: 0.25rem 0.65rem;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-
-/* Login Screen & RBAC CSS */
-.login-container {
-    max-width: 480px;
-    margin: 3rem auto;
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 18px;
-    padding: 2.2rem 2.5rem;
-    box-shadow: 0 20px 40px -10px rgba(10, 37, 64, 0.15);
-}
-.login-header {
-    text-align: center;
-    margin-bottom: 2rem;
-}
-.login-title {
-    font-size: 1.6rem;
-    font-weight: 800;
-    color: #0A2540;
-}
-.login-sub {
-    font-size: 0.9rem;
-    color: #64748B;
-    margin-top: 6px;
-}
-.user-sidebar-card {
-    background: linear-gradient(135deg, #0A2540 0%, #163B66 100%);
-    border: 1px solid #00B14F;
-    border-radius: 12px;
-    padding: 1rem;
-    color: white !important;
-    margin-bottom: 1.2rem;
-}
-.user-sidebar-card * {
-    color: white !important;
-}
-
-/* ==============================================================================
-   ENTERPRISE BANKING CARDS & TABLES (THEME NAVY BLUE & GOLD ACCENT - STYLE NH)
-   ============================================================================== */
-.banking-panel {
-    background: #FFFFFF;
-    border: 1px solid #CBD5E1;
-    border-radius: 12px;
-    margin-bottom: 1.5rem;
-    overflow: hidden;
-    box-shadow: 0 4px 14px rgba(10, 37, 64, 0.06);
-}
-.banking-panel-header {
-    background: linear-gradient(135deg, #0A2540 0%, #133963 100%);
-    padding: 0.8rem 1.25rem;
-    color: #FBBF24 !important;
-    font-size: 0.96rem;
-    font-weight: 800;
-    letter-spacing: 0.3px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 2px solid #00B14F;
-}
-.banking-panel-header * {
-    color: #FBBF24 !important;
-}
-.banking-panel-header-badge {
-    background: rgba(251, 191, 36, 0.18);
-    border: 1px solid rgba(251, 191, 36, 0.5);
-    color: #FBBF24 !important;
-    font-size: 0.75rem;
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-weight: 700;
-}
-.banking-panel-body {
-    padding: 0;
-    background: #FFFFFF;
-}
-.banking-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.88rem;
-    text-align: left;
-}
-.banking-table th {
-    background: #F1F5F9;
-    color: #334155;
-    font-weight: 700;
-    padding: 0.75rem 1rem;
-    border-bottom: 2px solid #CBD5E1;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
-}
-.banking-table td {
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid #E2E8F0;
-    color: #1E293B;
-    vertical-align: middle;
-    line-height: 1.45;
-}
-.banking-table tr:hover {
-    background-color: #F8FAFC;
-}
-.banking-table tr:last-child td {
-    border-bottom: none;
-}
-
-.badge-diamond-small {
-    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-    color: #FFFFFF !important;
-    padding: 0.2rem 0.6rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    display: inline-block;
-}
-.badge-prime-small {
-    background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
-    color: #FFFFFF !important;
-    padding: 0.2rem 0.6rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    display: inline-block;
-}
-.badge-mass-small {
-    background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
-    color: #FFFFFF !important;
-    padding: 0.2rem 0.6rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 700;
-    display: inline-block;
-}
-.badge-match-score {
-    background: #ECFDF5;
-    border: 1px solid #A7F3D0;
-    color: #047857 !important;
-    padding: 0.2rem 0.6rem;
-    border-radius: 12px;
-    font-weight: 800;
-    font-size: 0.8rem;
-    display: inline-block;
-}
-.badge-channel {
-    background: #F1F5F9;
-    border: 1px solid #CBD5E1;
-    color: #475569;
-    padding: 0.2rem 0.55rem;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 0.78rem;
-}
-.code-cif {
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    color: #0A2540;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-weight: 700;
-    font-family: monospace;
-    font-size: 0.84rem;
-}
-
-/* ==============================================================================
-   CUSTOMER QUEUE GRID CARDS (VẼ TỪNG Ô KHÁCH HÀNG ƯU TIÊN)
-   ============================================================================== */
-.cust-card-box {
-    background: #FFFFFF;
-    border: 1px solid #E2E8F0;
-    border-radius: 14px;
-    padding: 1.1rem 1.2rem;
-    box-shadow: 0 4px 12px rgba(10, 37, 64, 0.05);
-    transition: all 0.25s ease-in-out;
-    margin-bottom: 0.5rem;
-    border-top: 4px solid #00B14F;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-.cust-card-box.diamond {
-    border-top: 4px solid #F59E0B;
-    background: linear-gradient(180deg, #FFFDF5 0%, #FFFFFF 100%);
-}
-.cust-card-box.prime {
-    border-top: 4px solid #6366F1;
-    background: linear-gradient(180deg, #F8F9FF 0%, #FFFFFF 100%);
-}
-.cust-card-box.mass {
-    border-top: 4px solid #0EA5E9;
-    background: linear-gradient(180deg, #F5FAFF 0%, #FFFFFF 100%);
-}
-.cust-card-box:hover {
-    box-shadow: 0 10px 25px rgba(10, 37, 64, 0.12);
-    transform: translateY(-3px);
-}
-.cust-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 0.6rem;
-}
-.cust-card-avatar {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: #0A2540;
-    color: #FFFFFF;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 800;
-    font-size: 0.95rem;
-    margin-right: 10px;
-}
-.cust-card-avatar.diamond {
-    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
-}
-.cust-card-avatar.prime {
-    background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
-}
-.cust-card-avatar.mass {
-    background: linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%);
-}
-.cust-card-name {
-    font-size: 1rem;
-    font-weight: 800;
-    color: #0A2540;
-    line-height: 1.25;
-}
-.cust-card-cif {
-    font-family: monospace;
-    font-size: 0.76rem;
-    color: #64748B;
-    font-weight: 600;
-    margin-top: 2px;
-}
-.cust-card-stats {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.8rem;
-    color: #475569;
-    padding: 0.4rem 0;
-    border-bottom: 1px dashed #E2E8F0;
-    margin-bottom: 0.55rem;
-}
-.cust-card-rec-box {
-    background: #F8FAFC;
-    border: 1px solid #E2E8F0;
-    border-radius: 8px;
-    padding: 0.6rem 0.8rem;
-    margin-bottom: 0.4rem;
-}
-.cust-card-rec-label {
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #047857;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 3px;
-}
-.cust-card-rec-name {
-    font-size: 0.86rem;
-    font-weight: 700;
-    color: #1E293B;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-</style>""", unsafe_allow_html=True)
+with open(os.path.join(os.path.dirname(__file__), "theme.css"), encoding="utf-8") as theme_file:
+    st.markdown(f"<style>{theme_file.read()}</style>", unsafe_allow_html=True)
 
 # Helper render HTML an toàn không bị dính thụt dòng Markdown
 def render_html(html_str: str):
+    html_str = re.sub(
+        r":material/([a-z0-9_]+):",
+        r'<span class="ui-icon" aria-hidden="true">\1</span>',
+        html_str,
+    )
     if hasattr(st, 'html'):
         st.html(html_str)
     else:
@@ -871,45 +353,50 @@ if "authenticated_user" not in st.session_state:
 # ------------------------------------------------------------------------------
 # MÀN HÌNH ĐĂNG NHẬP HỆ THỐNG (ENTERPRISE BANKING LOGIN)
 # ------------------------------------------------------------------------------
+if not isinstance(st.session_state.authenticated_user, dict):
+    # A stale or incomplete Streamlit session must not be treated as a login.
+    st.session_state.authenticated_user = None
+
 if st.session_state.authenticated_user is None:
-    render_html("""
-    <div class="top-brand-bar">
-        <div>
-            <div class="top-brand-title">
-                <span>VPBank SmartAdvisor 360</span>
+    with st.container(key="login_layout"):
+        col_intro, col_form = st.columns([1.2, 1], gap="large", vertical_alignment="center")
+        with col_intro:
+            render_html("""
+            <div class="login-hero">
+                <div class="top-brand-title">VPBank SmartAdvisor 360</div>
+                <div class="top-brand-sub">
+                    Hệ thống Trợ lý Tư vấn Bán chéo & Đề xuất Sản phẩm Tài chính Cá nhân hóa (Bảo mật RBAC)
+                </div>
+                <div class="hero-orbit" aria-hidden="true">
+                    <div class="orbit-inner"></div>
+                    <i class="orbit-node node-one"></i><i class="orbit-node node-two"></i>
+                    <i class="orbit-node node-three"></i><i class="orbit-node node-four"></i>
+                    <div class="orbit-center"><span></span><span></span><span></span></div>
+                </div>
             </div>
-            <div class="top-brand-sub">
-                Hệ thống Trợ lý Tư vấn Bán chéo & Đề xuất Sản phẩm Tài chính Cá nhân hóa (Bảo mật RBAC)
-            </div>
-        </div>
-    </div>
-    """)
-    
-    col_l1, col_l2, col_l3 = st.columns([1, 1.8, 1])
-    with col_l2:
-        st.markdown("""
-        <div class="login-container">
-            <div class="login-header">
-                <div class="login-title">🔐 Đăng Nhập Hệ Thống</div>
-                <div class="login-sub">SmartAdvisor 360 - MongoDB Atlas User Authentication</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        with st.form("login_form"):
-            in_username = st.text_input("👤 Tên đăng nhập:", placeholder="Nhập tên đăng nhập (vd: gdv_ha, manager, admin)...")
-            in_password = st.text_input("🔑 Mật khẩu:", type="password", placeholder="Nhập mật khẩu...")
-            submit_login = st.form_submit_button("🚀 Đăng Nhập Hệ Thống", use_container_width=True)
-            
-            if submit_login:
-                res = authenticate_user(in_username, in_password)
-                if res.get("success"):
-                    st.session_state.authenticated_user = res.get("user")
-                    st.toast(res.get("message"))
-                    time.sleep(0.3)
-                    st.rerun()
-                else:
-                    st.error(res.get("message"))
+            """)
+        with col_form:
+            with st.form("login_form"):
+                render_html("""
+                <div class="login-header">
+                    <div class="login-title">:material/lock: Đăng Nhập Hệ Thống</div>
+                    <div class="login-sub">SmartAdvisor 360 - MongoDB Atlas User Authentication</div>
+                </div>
+                """)
+                in_username = st.text_input("Tên đăng nhập:", icon=":material/person:", placeholder="Nhập tên đăng nhập (vd: gdv_ha, manager, admin)...")
+                in_password = st.text_input("Mật khẩu:", icon=":material/key:", type="password", placeholder="Nhập mật khẩu...")
+                submit_login = st.form_submit_button("Đăng Nhập Hệ Thống", icon=":material/login:", use_container_width=True)
+                
+                if submit_login:
+                    res = authenticate_user(in_username, in_password)
+                    if res.get("success") and isinstance(res.get("user"), dict):
+                        st.session_state.authenticated_user = res["user"]
+                        st.toast(res.get("message"))
+                        time.sleep(0.3)
+                        st.rerun()
+                    else:
+                        st.error(res.get("message", "Đăng nhập không hợp lệ. Vui lòng thử lại."))
+
 
     st.stop()
 
@@ -939,7 +426,7 @@ render_html(f"""
     </div>
     <div style="text-align: right;">
         <div style="font-size: 0.92rem; color: #FFFFFF; font-weight: 700;">
-            🏢 {user_branch}
+            :material/account_balance: {user_branch}
         </div>
         <div style="font-size: 0.85rem; color: #E2E8F0; margin-top: 4px;">
             {role_label}: <b>{user_fullname} ({user_code})</b>
@@ -969,16 +456,16 @@ if "current_ekyc_sid" not in st.session_state:
 # SIDEBAR: BỘ LỌC KHÁCH HÀNG & THÔNG TIN TÀI KHOẢN
 # ==============================================================================
 with st.sidebar:
-    st.markdown(f"""
+    render_html(f"""
     <div class="user-sidebar-card">
         <div style="font-size: 0.78rem; color: #94A3B8; text-transform: uppercase; font-weight: 600;">Tài Khoản Đang Đăng Nhập</div>
         <div style="font-size: 1.1rem; font-weight: 800; color: #FFFFFF; margin-top: 2px;">{user_fullname}</div>
         <div style="font-size: 0.82rem; color: #CBD5E1; margin-top: 2px;">Mã NV: <b>{user_code}</b> | {user_branch}</div>
         <div style="margin-top: 6px;"><span class="{role_badge_class}">{role_label}</span></div>
     </div>
-    """, unsafe_allow_html=True)
+    """)
     
-    if st.button("🚪 Đăng Xuất Hệ Thống", key="btn_logout_sb", use_container_width=True):
+    if st.button("Đăng Xuất Hệ Thống", icon=":material/logout:", key="btn_logout_sb", use_container_width=True):
         st.session_state.authenticated_user = None
         st.rerun()
         
@@ -1067,21 +554,21 @@ tab1, tab2, tab3, tab4 = None, None, None, None
 
 if current_role == ROLE_TELLER:
     tab1, tab3 = st.tabs([
-        "🎯 Hồ Sơ Khách Hàng 360° & Đề Xuất Bán Chéo",
-        "📦 Danh Mục Sản Phẩm & Biểu Phí Ưu Đãi"
+        ":material/target: Hồ Sơ Khách Hàng 360° & Đề Xuất Bán Chéo",
+        ":material/inventory_2: Danh Mục Sản Phẩm & Biểu Phí Ưu Đãi"
     ])
 elif current_role == ROLE_MANAGER:
     tab2, tab1, tab3 = st.tabs([
-        "📈 Báo Cáo Cơ Hội Kinh Doanh Chi Nhánh",
-        "🎯 Hồ Sơ Khách Hàng 360° & Đề Xuất Bán Chéo",
-        "📦 Danh Mục Sản Phẩm & Biểu Phí Ưu Đãi"
+        ":material/trending_up: Báo Cáo Cơ Hội Kinh Doanh Chi Nhánh",
+        ":material/target: Hồ Sơ Khách Hàng 360° & Đề Xuất Bán Chéo",
+        ":material/inventory_2: Danh Mục Sản Phẩm & Biểu Phí Ưu Đãi"
     ])
 else:  # ROLE_ADMIN
     tab1, tab2, tab3, tab4 = st.tabs([
-        "🎯 Hồ Sơ Khách Hàng 360° & Đề Xuất Bán Chéo",
-        "📈 Báo Cáo Cơ Hội Kinh Doanh Chi Nhánh",
-        "📦 Danh Mục Sản Phẩm & Biểu Phí Ưu Đãi",
-        "🛡️ Quản Lý Người Dùng & Phân Quyền Hệ Thống"
+        ":material/target: Hồ Sơ Khách Hàng 360° & Đề Xuất Bán Chéo",
+        ":material/trending_up: Báo Cáo Cơ Hội Kinh Doanh Chi Nhánh",
+        ":material/inventory_2: Danh Mục Sản Phẩm & Biểu Phí Ưu Đãi",
+        ":material/shield: Quản Lý Người Dùng & Phân Quyền Hệ Thống"
     ])
 
 # ==============================================================================
@@ -1091,11 +578,11 @@ with tab1:
     # --------------------------------------------------------------------------
     # KHU VỰC QUẦY GIAO DỊCH SỐ: EKYC LIÊN THIẾT BỊ (CROSS-DEVICE QR & CAMERA)
     # --------------------------------------------------------------------------
-    with st.expander("🛡️ **QUẦY GIAO DỊCH SỐ: NHẬN DIỆN KHUÔN MẶT KHÁCH HÀNG (AI Smart Counter & Mobile eKYC)**", expanded=(selected_cif is None)):
+    with st.expander(":material/shield: **QUẦY GIAO DỊCH SỐ: NHẬN DIỆN KHUÔN MẶT KHÁCH HÀNG (AI Smart Counter & Mobile eKYC)**", expanded=(selected_cif is None)):
         ekyc_tab1, ekyc_tab2, ekyc_tab3 = st.tabs([
-            "📱 Xác Thực Qua Di Động (Cross-Device QR)",
-            "📷 Quét Khuôn Mặt Tại Quầy (Webcam)",
-            "📁 Tải Ảnh Đối Soát / Đăng Ký Mới"
+            ":material/smartphone: Xác Thực Qua Di Động (Cross-Device QR)",
+            ":material/photo_camera: Quét Khuôn Mặt Tại Quầy (Webcam)",
+            ":material/folder_open: Tải Ảnh Đối Soát / Đăng Ký Mới"
         ])
         
         # TAB A: XÁC THỰC QUA DI ĐỘNG (CROSS-DEVICE QR)
@@ -1106,11 +593,11 @@ with tab1:
                 all_detected_ips = get_all_local_ips()
                 
                 # Cấu hình IP tùy chọn
-                with st.expander("⚙️ **Cài Đặt Mạng & Địa Chỉ IP Máy Chủ**", expanded=False):
+                with st.expander(":material/settings: **Cài Đặt Mạng & Địa Chỉ IP Máy Chủ**", expanded=False):
                     st.caption("Chọn nhanh IP phù hợp với kiểu kết nối giữa Điện thoại và Máy tính:")
                     col_ip_btns = st.columns(len(all_detected_ips)) if all_detected_ips else [st.container()]
                     for i, ip_opt in enumerate(all_detected_ips):
-                        ip_label = f"📶 Hotspot ({ip_opt})" if "192.168.137" in ip_opt else f"🌐 Wi-Fi/LAN ({ip_opt})"
+                        ip_label = f":material/wifi: Hotspot ({ip_opt})" if "192.168.137" in ip_opt else f":material/lan: Wi-Fi/LAN ({ip_opt})"
                         with col_ip_btns[i]:
                             if st.button(ip_label, key=f"btn_quick_ip_{i}"):
                                 st.session_state["custom_ip_input"] = ip_opt
@@ -1141,7 +628,7 @@ with tab1:
                 # Kiểm tra xem session đã nhận diện thành công chưa
                 if sess.get("status") == "VERIFIED" and sess.get("result"):
                     res = sess["result"]
-                    st.success(f"🎉 **XÁC THỰC THÀNH CÔNG TỪ THIẾT BỊ DI ĐỘNG!**\n\nKhách hàng: **{res.get('customer_name')}** (Mã CIF: `{res.get('cif_number')}`) | Phân khúc: **{res.get('segment')}** | Độ khớp: **{res.get('confidence')}%** (Engine: {res.get('engine')})")
+                    st.success(f":material/verified: **XÁC THỰC THÀNH CÔNG TỪ THIẾT BỊ DI ĐỘNG!**\n\nKhách hàng: **{res.get('customer_name')}** (Mã CIF: `{res.get('cif_number')}`) | Phân khúc: **{res.get('segment')}** | Độ khớp: **{res.get('confidence')}%** (Engine: {res.get('engine')})")
                     if st.session_state.selected_cif != res.get("cif_number"):
                         st.session_state.selected_cif = res.get("cif_number")
                         st.session_state.ekyc_verified = True
@@ -1160,13 +647,13 @@ with tab1:
                     1. Khách hàng bật **Wi-Fi trên điện thoại** (kết nối **cùng mạng Wi-Fi** với laptop này).
                     2. Dùng **Camera / Zalo / Trình duyệt điện thoại** quét mã QR bên cạnh:
                        - URL: [`{sess['mobile_url']}`]({sess['mobile_url']})
-                    3. Hoặc **[👉 Bấm vào đây để mở test Camera ngay trên trình duyệt máy tính]({sess['local_url']})**.
+                    3. Hoặc **[:material/arrow_forward: Bấm vào đây để mở test Camera ngay trên trình duyệt máy tính]({sess['local_url']})**.
                     4. Khách hàng căn mặt vào khung oval và bấm **"Chụp & Gửi Xác Thực"** để kích hoạt hồ sơ tại quầy.
                     """)
                     
                     btn_c1, btn_c2 = st.columns(2)
                     with btn_c1:
-                        if st.button("🔄 Kiểm Tra Kết Quả Realtime", key="btn_check_sess"):
+                        if st.button("Kiểm Tra Kết Quả Realtime", icon=":material/refresh:", key="btn_check_sess"):
                             chk_sess = session_manager.get_session(sid)
                             if chk_sess and chk_sess.get("status") == "VERIFIED":
                                 res = chk_sess["result"]
@@ -1176,20 +663,20 @@ with tab1:
                                 st.toast(f"Đã nhận diện khách hàng {res.get('customer_name')}!")
                                 st.rerun()
                             elif chk_sess and chk_sess.get("status") == "PENDING":
-                                st.info("🟡 Đang chờ khách hàng quét mã và gửi ảnh từ điện thoại...")
+                                st.info(":material/schedule: Đang chờ khách hàng quét mã và gửi ảnh từ điện thoại...")
                             elif chk_sess and chk_sess.get("status") == "FAILED":
-                                st.error("❌ Không nhận diện được khuôn mặt trong ảnh gửi về.")
+                                st.error(":material/error: Không nhận diện được khuôn mặt trong ảnh gửi về.")
                     with btn_c2:
-                        if st.button("➕ Tạo Mã QR Phiên Mới", key="btn_new_sess"):
+                        if st.button("Tạo Mã QR Phiên Mới", icon=":material/add:", key="btn_new_sess"):
                             new_sess = session_manager.create_session(host_override=st.session_state.get("custom_ip_input", detected_ip))
                             st.session_state.current_ekyc_sid = new_sess["session_id"]
                             st.session_state.ekyc_verified = False
                             st.session_state.ekyc_info = None
                             st.rerun()
                             
-                    st.info("💡 **Mẹo**: Nếu mạng Wi-Fi có bảo mật chặn kết nối giữa 2 thiết bị (Client Isolation), bạn có thể bật **Điểm phát sóng di động (Hotspot)** từ điện thoại cho laptop bắt chung.")
+                    st.info(":material/lightbulb: **Mẹo**: Nếu mạng Wi-Fi có bảo mật chặn kết nối giữa 2 thiết bị (Client Isolation), bạn có thể bật **Điểm phát sóng di động (Hotspot)** từ điện thoại cho laptop bắt chung.")
             else:
-                st.error(f"❌ Không thể tải Module Session Manager ({face_engine_error if face_engine_error else 'Vui lòng nhấn Rerun hoặc khởi động lại Streamlit'}).")
+                st.error(f":material/error: Không thể tải Module Session Manager ({face_engine_error if face_engine_error else 'Vui lòng nhấn Rerun hoặc khởi động lại Streamlit'}).")
 
         # TAB B: QUÉT TẠI QUẦY (WEBCAM)
         with ekyc_tab2:
@@ -1200,7 +687,7 @@ with tab1:
                 with st.spinner("Đang nhận diện sinh trắc học AI..."):
                     rec_res = face_engine.recognize_face(cam_file.getvalue())
                     if rec_res.get("is_identified"):
-                        st.success(f"✅ **Nhận diện thành công:** {rec_res['customer_name']} (Mã CIF: `{rec_res['cif_number']}`) | Độ khớp: **{rec_res['confidence']}%** ({rec_res['engine']})")
+                        st.success(f":material/check_circle: **Nhận diện thành công:** {rec_res['customer_name']} (Mã CIF: `{rec_res['cif_number']}`) | Độ khớp: **{rec_res['confidence']}%** ({rec_res['engine']})")
                         if st.button("Kích Hoạt Hồ Sơ 360° Khách Hàng Này", key="btn_activate_cam_cif"):
                             st.session_state.selected_cif = rec_res["cif_number"]
                             st.session_state.ekyc_verified = True
@@ -1208,18 +695,18 @@ with tab1:
                             st.query_params["cif"] = rec_res["cif_number"]
                             st.rerun()
                     else:
-                        st.warning(f"⚠️ {rec_res.get('message', 'Không tìm thấy khuôn mặt khớp trong CSDL')}")
+                        st.warning(f":material/warning: {rec_res.get('message', 'Không tìm thấy khuôn mặt khớp trong CSDL')}")
 
         # TAB C: TẢI ẢNH ĐỐI SOÁT / ĐĂNG KÝ MỚI
         with ekyc_tab3:
             sub_col1, sub_col2 = st.columns(2, gap="large")
             with sub_col1:
-                st.markdown("##### 📁 Tải Ảnh Đối Soát Nhận Diện")
+                st.markdown("##### :material/folder_open: Tải Ảnh Đối Soát Nhận Diện")
                 up_file = st.file_uploader("Chọn ảnh chân dung kiểm thử", type=["jpg", "jpeg", "png"], key="up_test_face")
                 if up_file is not None and face_engine:
                     rec_res = face_engine.recognize_face(up_file.getvalue())
                     if rec_res.get("is_identified"):
-                        st.success(f"✅ **Nhận diện khớp:** {rec_res['customer_name']} (CIF: `{rec_res['cif_number']}`) | Độ khớp: **{rec_res['confidence']}%**")
+                        st.success(f":material/check_circle: **Nhận diện khớp:** {rec_res['customer_name']} (CIF: `{rec_res['cif_number']}`) | Độ khớp: **{rec_res['confidence']}%**")
                         if st.button("Mở Hồ Sơ Khách Hàng Này", key="btn_open_uploaded"):
                             st.session_state.selected_cif = rec_res["cif_number"]
                             st.session_state.ekyc_verified = True
@@ -1227,9 +714,9 @@ with tab1:
                             st.query_params["cif"] = rec_res["cif_number"]
                             st.rerun()
                     else:
-                        st.warning("⚠️ Không nhận diện được khách hàng trong ảnh này.")
+                        st.warning(":material/warning: Không nhận diện được khách hàng trong ảnh này.")
             with sub_col2:
-                st.markdown("##### ➕ Đăng Ký Khuôn Mặt Mới (MongoDB Atlas)")
+                st.markdown("##### :material/add: Đăng Ký Khuôn Mặt Mới (MongoDB Atlas)")
                 all_cifs = sorted(purchase_history['reviewerID'].unique().tolist())
                 en_cif = st.selectbox("Chọn mã CIF cần đăng ký khuôn mặt:", all_cifs, key="en_cif_sel")
                 cust_recs = purchase_history[purchase_history['reviewerID'] == en_cif]
@@ -1237,7 +724,7 @@ with tab1:
                 en_seg = cust_recs['segment'].iloc[0] if not cust_recs.empty else "MASS"
                 
                 en_img = st.file_uploader(f"Tải ảnh chân dung mới cho {en_name} ({en_cif})", type=["jpg", "jpeg", "png"], key="up_enroll_face")
-                if en_img is not None and st.button("💾 Lưu Vào MongoDB & Bộ Nhớ Sinh Trắc Học", key="btn_save_enroll"):
+                if en_img is not None and st.button("Lưu Vào MongoDB & Bộ Nhớ Sinh Trắc Học", icon=":material/save:", key="btn_save_enroll"):
                     if face_engine:
                         with st.spinner("Đang trích xuất vector và đồng bộ vào MongoDB Atlas..."):
                             res = face_engine.enroll_customer_face(en_cif, en_name, en_seg, en_img.getvalue())
@@ -1253,7 +740,7 @@ with tab1:
                                     "engine": "MongoDB Atlas eKYC Biometrics"
                                 }
                                 st.query_params["cif"] = en_cif
-                                st.success(f"✅ {res.get('message')}")
+                                st.success(f":material/check_circle: {res.get('message')}")
                                 st.toast("Đã lưu thành công vào MongoDB Atlas!")
                                 time.sleep(0.5)
                                 st.rerun()
@@ -1303,7 +790,7 @@ with tab1:
                         </div>
                         <div style="margin-top: 6px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                             {badge_html}
-                            <span class="ekyc-verified-badge">🛡️ eKYC: FACEID ACTIVE</span>
+                            <span class="ekyc-verified-badge">:material/shield: eKYC: FACEID ACTIVE</span>
                         </div>
                     </div>
                 </div>
@@ -1412,8 +899,8 @@ with tab1:
                 
     else:
         # Giao diện Tổng Quan khi chưa chọn khách hàng cụ thể (Executive Dashboard)
-        st.markdown("### 🌟 Trung Tâm Điều Hành & Phân Tích Khách Hàng Chi Nhánh")
-        st.info("💡 **Hướng dẫn**: Chọn nhanh khách hàng từ danh sách các **ô hàng đợi bên dưới** (bấm *Mở Hồ Sơ & Tư Vấn*) hoặc tra cứu từ thanh tìm kiếm bên trái để xem Hồ sơ 360° và các Gợi ý sản phẩm phù hợp.")
+        st.markdown("### :material/dashboard: Trung Tâm Điều Hành & Phân Tích Khách Hàng Chi Nhánh")
+        st.info(":material/lightbulb: **Hướng dẫn**: Chọn nhanh khách hàng từ danh sách các **ô hàng đợi bên dưới** (bấm *Mở Hồ Sơ & Tư Vấn*) hoặc tra cứu từ thanh tìm kiếm bên trái để xem Hồ sơ 360° và các Gợi ý sản phẩm phù hợp.")
         
         # 4 Thẻ KPI vận hành
         kpi_col1, kpi_col2, kpi_col3, kpi_col4 = st.columns(4)
@@ -1455,7 +942,7 @@ with tab1:
         # ======================================================================
         # HÀNG ĐỢI KHÁCH HÀNG ƯU TIÊN TIẾP CẬN TẠI QUẦY (VẼ TỪNG Ô / GRID CARDS)
         # ======================================================================
-        st.markdown("#### 🎯 Hàng Đợi Khách Hàng Ưu Tiên Tiếp Cận Tại Quầy Hôm Nay")
+        st.markdown("#### :material/target: Hàng Đợi Khách Hàng Ưu Tiên Tiếp Cận Tại Quầy Hôm Nay")
         st.caption("Danh sách khách hàng có tín hiệu giao dịch mới nhất được phân tích và vẽ theo từng ô trực quan kèm nút mở hồ sơ trực tiếp:")
         
         # Bộ lọc phân khúc nhanh cho hàng đợi
@@ -1463,7 +950,7 @@ with tab1:
         with col_f1:
             queue_filter = st.selectbox(
                 "Lọc hàng đợi tại quầy theo phân khúc:",
-                ["Tất cả hàng đợi (Ưu tiên)", "💎 DIAMOND VIP", "⭐ PRIME Priority", "🔷 MASS Standard"],
+                ["Tất cả hàng đợi (Ưu tiên)", "DIAMOND VIP", "PRIME Priority", "MASS Standard"],
                 key="queue_seg_filter"
             )
         
@@ -1474,11 +961,11 @@ with tab1:
         prime_cifs = purchase_history[purchase_history['segment'] == 'PRIME']['reviewerID'].unique().tolist()
         mass_cifs = purchase_history[purchase_history['segment'] == 'MASS']['reviewerID'].unique().tolist()
         
-        if queue_filter.startswith("💎"):
+        if queue_filter.startswith("DIAMOND"):
             target_cifs = diamond_cifs
-        elif queue_filter.startswith("⭐"):
+        elif queue_filter.startswith("PRIME"):
             target_cifs = prime_cifs
-        elif queue_filter.startswith("🔷"):
+        elif queue_filter.startswith("MASS"):
             target_cifs = mass_cifs
         else:
             # Kết hợp xen kẽ tạo danh sách 12 khách hàng tiêu biểu
@@ -1500,7 +987,7 @@ with tab1:
                     # Xác định kênh chính
                     chans = u_ph['channel'].value_counts() if 'channel' in u_ph.columns and not u_ph.empty else []
                     primary_chan = chans.index[0] if len(chans) > 0 else "APP"
-                    chan_label = "📱 VPBank NEO" if primary_chan == "APP" else "🏢 Tại Quầy"
+                    chan_label = ":material/smartphone: VPBank NEO" if primary_chan == "APP" else ":material/account_balance: Tại Quầy"
                     
                     # Avatar chữ cái đầu
                     name_parts = cust_name.strip().split()
@@ -1560,12 +1047,12 @@ with tab1:
                                 <div>{seg_badge_html}</div>
                             </div>
                             <div class="cust-card-stats">
-                                <span>📊 Lịch sử: <b>{tx_count} GD</b></span>
+                                <span>:material/bar_chart: Lịch sử: <b>{tx_count} GD</b></span>
                                 <span>{chan_label}</span>
                             </div>
                             <div class="cust-card-rec-box">
                                 <div class="cust-card-rec-label">
-                                    <span>🎯 GỢI Ý BÁN CHÉO #1</span>
+                                    <span>:material/target: GỢI Ý BÁN CHÉO #1</span>
                                     <span class="badge-match-score">{top_match}</span>
                                 </div>
                                 <div class="cust-card-rec-name" title="{top_prod}">{top_prod}</div>
@@ -1577,7 +1064,7 @@ with tab1:
                     render_html(card_html)
                     
                     # Nút bấm mở hồ sơ trực tiếp từ ô
-                    if st.button("👉 Mở Hồ Sơ & Tư Vấn", key=f"btn_card_cif_{cid}_{i}_{j}", use_container_width=True):
+                    if st.button("Mở Hồ Sơ & Tư Vấn", icon=":material/arrow_forward:", key=f"btn_card_cif_{cid}_{i}_{j}", use_container_width=True):
                         st.session_state.selected_cif = cid
                         st.session_state.ekyc_verified = False
                         st.session_state.ekyc_info = None
@@ -1590,18 +1077,18 @@ with tab1:
 # ==============================================================================
 if tab2 is not None:
     with tab2:
-        st.markdown("### 📊 Báo Cáo Cơ Hội Kinh Doanh & Phân Khúc Toàn Chi Nhánh")
+        st.markdown("### :material/bar_chart: Báo Cáo Cơ Hội Kinh Doanh & Phân Khúc Toàn Chi Nhánh")
         st.caption("Báo cáo số liệu thời gian thực hỗ trợ Giám đốc Chi nhánh & Trưởng phòng Dịch vụ Khách hàng:")
         
         col_chart1, col_chart2 = st.columns(2)
         
         with col_chart1:
-            st.markdown("##### 👥 Cơ Cấu Phân Khúc Khách Hàng Toàn Chi Nhánh")
+            st.markdown("##### :material/groups: Cơ Cấu Phân Khúc Khách Hàng Toàn Chi Nhánh")
             seg_dist = purchase_history.drop_duplicates(subset=['reviewerID'])['segment'].value_counts()
             st.bar_chart(seg_dist, color="#0A2540")
             
         with col_chart2:
-            st.markdown("##### 🏆 Top Nhóm Sản Phẩm Có Cơ Hội Kinh Doanh Lớn Nhất")
+            st.markdown("##### :material/emoji_events: Top Nhóm Sản Phẩm Có Cơ Hội Kinh Doanh Lớn Nhất")
             # Phân bổ nhu cầu thực tế dựa trên hành vi giao dịch và gợi ý cá nhân hóa
             top_recs_summary = []
             for cid, group in purchase_history.groupby('reviewerID'):
@@ -1620,7 +1107,7 @@ if tab2 is not None:
                 top_recs_summary.append(rec_cat)
                 
             rec_cat_dist = pd.Series(top_recs_summary).value_counts()
-            st.bar_chart(rec_cat_dist, color="#00B14F")
+            st.bar_chart(rec_cat_dist, color="#4F9CF9")
             
         st.markdown("<br>", unsafe_allow_html=True)
         
@@ -1711,7 +1198,7 @@ with tab3:
 # ==============================================================================
 if tab4 is not None:
     with tab4:
-        st.markdown("### 🛡️ Quản Lý Người Dùng & Phân Quyền Hệ Thống (RBAC Admin Panel)")
+        st.markdown("### :material/shield: Quản Lý Người Dùng & Phân Quyền Hệ Thống (RBAC Admin Panel)")
         st.caption("Quản lý danh sách tài khoản nhân viên, phân quyền vai trò và đồng bộ trực tiếp với MongoDB Atlas:")
         
         all_users = get_all_users()
@@ -1782,7 +1269,7 @@ if tab4 is not None:
         col_adm_left, col_adm_right = st.columns(2, gap="large")
         
         with col_adm_left:
-            st.markdown("##### ➕ Tạo Tài Khoản Nhân Viên Mới (GDV / Manager)")
+            st.markdown("##### :material/add: Tạo Tài Khoản Nhân Viên Mới (GDV / Manager)")
             st.caption("Admin có quyền cấp tài khoản mới với vai trò **Giám Đốc Chi Nhánh (Manager)** hoặc **Giao Dịch Viên (GDV)**:")
             with st.form("form_create_user"):
                 new_uname = st.text_input("Tên đăng nhập (username):", placeholder="vd: gdv_phuong, manager_hung...")
@@ -1792,7 +1279,7 @@ if tab4 is not None:
                 new_role_sel = st.selectbox("Phân vai trò (Role):", options=[ROLE_TELLER, ROLE_MANAGER, ROLE_ADMIN], format_func=lambda x: ROLE_LABELS[x], help="Chọn vai trò GDV (Giao dịch viên), Manager (Giám đốc chi nhánh) hoặc Admin")
                 new_branch = st.text_input("Chi nhánh:", value="Chi nhánh Hội Sở")
                 
-                submit_create = st.form_submit_button("💾 Khởi Tạo & Lưu Vào MongoDB", use_container_width=True)
+                submit_create = st.form_submit_button("Khởi Tạo & Lưu Vào MongoDB", icon=":material/save:", use_container_width=True)
                 if submit_create:
                     res_c = create_user(new_uname, new_pwd, new_fname, new_code, new_role_sel, new_branch)
                     if res_c.get("success"):
@@ -1804,18 +1291,18 @@ if tab4 is not None:
                         st.error(res_c.get("message"))
                         
         with col_adm_right:
-            st.markdown("##### ⚙️ Quản Lý / Đổi Quyền / Khóa Tài Khoản")
+            st.markdown("##### :material/settings: Quản Lý / Đổi Quyền / Khóa Tài Khoản")
             user_list_usernames = [u.get("username") for u in all_users if u.get("username") != current_user.get("username")]
             if user_list_usernames:
                 sel_manage_user = st.selectbox("Chọn tài khoản cần thao tác:", user_list_usernames, key="sb_manage_user")
                 target_user = next((u for u in all_users if u.get("username") == sel_manage_user), None)
                 
                 if target_user:
-                    st.info(f"👤 Tài khoản: **{target_user.get('full_name')}** ({target_user.get('username')}) | Vai trò hiện tại: **{ROLE_LABELS.get(target_user.get('role'))}** | Trạng thái: **{target_user.get('status')}**")
+                    st.info(f":material/person: Tài khoản: **{target_user.get('full_name')}** ({target_user.get('username')}) | Vai trò hiện tại: **{ROLE_LABELS.get(target_user.get('role'))}** | Trạng thái: **{target_user.get('status')}**")
                     
                     col_m1, col_m2 = st.columns(2)
                     with col_m1:
-                        status_btn_label = "🔒 Khóa Tài Khoản" if target_user.get("status") == "ACTIVE" else "🔓 Mở Khóa Tài Khoản"
+                        status_btn_label = ":material/lock: Khóa Tài Khoản" if target_user.get("status") == "ACTIVE" else ":material/lock_open: Mở Khóa Tài Khoản"
                         if st.button(status_btn_label, key="btn_toggle_status", use_container_width=True):
                             res_t = toggle_user_status(sel_manage_user)
                             if res_t.get("success"):
@@ -1828,7 +1315,7 @@ if tab4 is not None:
                         current_t_role = target_user.get("role")
                         idx_role = [ROLE_TELLER, ROLE_MANAGER, ROLE_ADMIN].index(current_t_role) if current_t_role in [ROLE_TELLER, ROLE_MANAGER, ROLE_ADMIN] else 0
                         up_role_sel = st.selectbox("Chọn vai trò mới:", options=[ROLE_TELLER, ROLE_MANAGER, ROLE_ADMIN], index=idx_role, format_func=lambda x: ROLE_LABELS[x], key="sb_up_role")
-                        if st.button("💾 Cập Nhật Vai Trò", key="btn_update_role", use_container_width=True):
+                        if st.button("Cập Nhật Vai Trò", icon=":material/save:", key="btn_update_role", use_container_width=True):
                             res_r = update_user_role(sel_manage_user, up_role_sel)
                             if res_r.get("success"):
                                 st.success(res_r.get("message"))
@@ -1837,9 +1324,9 @@ if tab4 is not None:
                                 st.rerun()
                                 
                     st.markdown("---")
-                    st.markdown("##### 🔑 Reset Mật Khẩu Cho Tài Khoản:")
+                    st.markdown("##### :material/key: Reset Mật Khẩu Cho Tài Khoản:")
                     reset_pwd_val = st.text_input("Mật khẩu mới:", type="password", key="in_reset_pwd")
-                    if st.button("🔑 Đổi Mật Khẩu Ngay", key="btn_do_reset_pwd"):
+                    if st.button("Đổi Mật Khẩu Ngay", icon=":material/key:", key="btn_do_reset_pwd"):
                         res_p = reset_user_password(sel_manage_user, reset_pwd_val)
                         if res_p.get("success"):
                             st.success(res_p.get("message"))

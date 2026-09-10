@@ -57,6 +57,8 @@ node_modules/
 package-lock.json
 
 # Local data caches & logs
+core/users_fallback.json
+core/.users_fallback-*.tmp
 data_fintech/
 *.csv.tmp
 *.log

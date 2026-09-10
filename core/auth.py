@@ -9,6 +9,7 @@ kèm cơ chế tự động Fallback file JSON nếu CSDL Cloud tạm thời m�
 import os
 import sys
 import json
+import tempfile
 import hashlib
 import binascii
 from datetime import datetime
@@ -101,6 +102,7 @@ def get_default_users() -> List[Dict[str, Any]]:
 
 def _save_fallback_users(users: List[Dict[str, Any]]):
     """Lưu danh sách users ra file JSON dự phòng"""
+    temp_path = None
     try:
         clean_users = []
         for u in users:
@@ -108,10 +110,26 @@ def _save_fallback_users(users: List[Dict[str, Any]]):
             if "_id" in u_copy:
                 del u_copy["_id"]
             clean_users.append(u_copy)
-        with open(FALLBACK_USERS_FILE, "w", encoding="utf-8") as f:
+        # Write completely before replacing the live file so readers never see
+        # an empty or partially written JSON document.
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=os.path.dirname(FALLBACK_USERS_FILE),
+            prefix=".users_fallback-", suffix=".tmp", delete=False,
+        ) as f:
+            temp_path = f.name
             json.dump(clean_users, f, ensure_ascii=False, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(temp_path, FALLBACK_USERS_FILE)
+        temp_path = None
     except Exception as e:
         print(f"⚠️ Không thể lưu fallback users: {e}")
+    finally:
+        if temp_path is not None:
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                pass
 
 
 def _load_fallback_users() -> List[Dict[str, Any]]:

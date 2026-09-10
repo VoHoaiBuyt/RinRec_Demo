@@ -315,9 +315,86 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        /* Whitepace palette; existing camera and session interactions are preserved. */
+        body {
+            background: #F1F7FE;
+            color: #193658;
+            padding: 1.5rem 1rem;
+            gap: 1rem;
+        }
+        .header {
+            background: #043873;
+            border: 0;
+            border-radius: 10px;
+            padding: 1.2rem;
+            gap: .75rem;
+            box-shadow: 0 6px 20px rgba(4,56,115,.08);
+        }
+        .brand-logo { background: #FFE492; color: #043873; border-radius: 6px; }
+        .brand-text p { color: #B9D9FF; }
+        .session-badge { background: #FFE492; border-color: #FFE492; color: #043873; }
+        .camera-container {
+            border-radius: 14px;
+            margin: .8rem auto;
+            box-shadow: 0 12px 32px rgba(4,56,115,.15), 0 0 0 3px #648DBB;
+        }
+        .face-oval { border-color: #A7CEFF; }
+        .face-oval.scanning { border-color: #FFE492; box-shadow: 0 0 0 9999px rgba(4,56,115,.65), 0 0 25px #4F9CF9; }
+        .scan-line { background: linear-gradient(90deg, transparent, #FFE492, transparent); box-shadow: 0 0 15px #FFE492; }
+        .btn-capture, .btn-done {
+            background: #4F9CF9;
+            border: 2px solid #246BCC;
+            color: #072B56;
+            border-radius: 8px;
+            min-height: 48px;
+            box-shadow: none;
+        }
+        .btn-capture:hover, .btn-done:hover { background: #83BBFF; }
+        .btn-capture:disabled, .btn-done:disabled { opacity: .6; cursor: not-allowed; }
+        .btn-file-input { background: #FFFFFF; border: 2px solid #648DBB; color: #043873; border-radius: 8px; }
+        .result-modal { background: rgba(4,56,115,.9); }
+        .result-card { background: #FFFFFF; border: 2px solid #8FAED0; border-radius: 14px; box-shadow: 0 20px 60px rgba(4,56,115,.2); }
+        .result-title { color: #043873; }
+        .result-desc { color: #526981; line-height: 1.7; }
+        .cust-badge { background: #F1F7FE; border: 2px solid #8FAED0; border-radius: 8px; }
+        .cust-badge .name { color: #043873; }
+        .cust-badge .meta { color: #526981; }
+        .ui-icon {
+            width: 1.25em;
+            height: 1.25em;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.8;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            vertical-align: -.25em;
+            flex-shrink: 0;
+        }
+        .success-icon .ui-icon { width: 36px; height: 36px; }
+        button:focus-visible, .btn-file-input:focus-within { outline: 3px solid #246BCC; outline-offset: 3px; }
+        @media (max-width: 360px) {
+            .header { flex-wrap: wrap; }
+            .result-modal { padding: 1rem; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation: none !important; transition: none !important; }
+        }
     </style>
 </head>
 <body>
+    <svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" aria-hidden="true" style="position:absolute;overflow:hidden">
+        <defs>
+            <symbol id="icon-camera" viewBox="0 0 24 24">
+                <path d="M8 5l1.5-2h5L16 5h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/>
+                <circle cx="12" cy="13" r="4"/>
+            </symbol>
+            <symbol id="icon-upload" viewBox="0 0 24 24">
+                <path d="M12 16V3m-5 5l5-5 5 5M4 15v5a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-5"/>
+            </symbol>
+            <symbol id="icon-check" viewBox="0 0 24 24"><path d="M5 12l4 4L19 6"/></symbol>
+            <symbol id="icon-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+        </defs>
+    </svg>
 
     <!-- Header -->
     <div class="header">
@@ -347,12 +424,12 @@
     <!-- Controls -->
     <div class="controls">
         <button class="btn-capture" id="btn-capture" onclick="takeSnapshotAndSubmit()">
-            <span id="btn-icon">📷</span>
+            <span id="btn-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-camera"/></svg></span>
             <span id="btn-text">Chụp Ảnh & Xác Thực eKYC</span>
         </button>
 
         <label class="btn-file-input">
-            📁 Tải ảnh chân dung từ thư viện
+            <svg class="ui-icon" aria-hidden="true"><use href="#icon-upload"/></svg> Tải ảnh chân dung từ thư viện
             <input type="file" id="file-input" accept="image/*" capture="user" style="display:none;" onchange="handleFileUpload(event)">
         </label>
     </div>
@@ -360,7 +437,7 @@
     <!-- Result Modal -->
     <div class="result-modal" id="result-modal">
         <div class="result-card">
-            <div class="success-icon" id="modal-icon">✓</div>
+            <div class="success-icon" id="modal-icon"><svg class="ui-icon" aria-hidden="true"><use href="#icon-check"/></svg></div>
             <h2 class="result-title" id="modal-title">Xác Thực Thành Công!</h2>
             <p class="result-desc" id="modal-desc">Hệ thống đã nhận diện danh tính và tự động đồng bộ sang màn hình Quầy Giao Dịch.</p>
             
@@ -390,6 +467,17 @@
         const statusHint = document.getElementById('status-hint');
 
         let stream = null;
+
+        // Only fixed internal symbol IDs are used; result text remains textContent.
+        function setIcon(element, name) {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('class', 'ui-icon');
+            svg.setAttribute('aria-hidden', 'true');
+            const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+            use.setAttribute('href', '#icon-' + name);
+            svg.appendChild(use);
+            element.replaceChildren(svg);
+        }
 
         // Khởi động Camera trước của điện thoại
         async function startCamera() {
@@ -494,7 +582,7 @@
             faceOval.classList.remove('scanning');
             scanLine.style.display = 'none';
             btnCapture.disabled = false;
-            btnIcon.textContent = "📷";
+            setIcon(btnIcon, 'camera');
             btnText.textContent = "Chụp Ảnh & Xác Thực eKYC";
 
             const modal = document.getElementById('result-modal');
@@ -506,7 +594,7 @@
             const modalCustCif = document.getElementById('modal-cust-cif');
 
             if (data.success && data.status === "VERIFIED") {
-                modalIcon.textContent = "✓";
+                setIcon(modalIcon, 'check');
                 modalIcon.style.color = "#34D399";
                 modalIcon.style.borderColor = "#00B14F";
                 modalTitle.textContent = "Xác Thực Thành Công!";
@@ -515,7 +603,7 @@
                 modalCustName.textContent = data.customer_name || "Khách Hàng";
                 modalCustCif.textContent = `Mã CIF: ${data.cif_number} | Phân khúc: ${data.segment || 'MASS'} | Độ tin cậy: ${data.confidence || 98}%`;
             } else {
-                modalIcon.textContent = "✕";
+                setIcon(modalIcon, 'close');
                 modalIcon.style.color = "#F87171";
                 modalIcon.style.borderColor = "#EF4444";
                 modalTitle.textContent = "Chưa Nhận Diện Được";
